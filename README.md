@@ -1,29 +1,43 @@
-# MindFlow
+# 🏫 DevClass
 
-MindFlow adalah sebuah aplikasi berbasis web yang dirancang untuk membantu pengguna dalam mengelola alur kerja (workflow), ide, dan data secara terstruktur. Proyek ini dikembangkan sebagai bagian dari pembelajaran dan implementasi **Full Stack Web Development** dengan fokus pada **Authentication menggunakan JWT** serta **CRUD REST API**.
+## Deskripsi Proyek
 
-## ✨ Fitur Utama
+DevClass adalah platform pembelajaran berbasis web yang dirancang untuk memfasilitasi pengelolaan kelas, proses belajar-mengajar, serta monitoring progres peserta secara terstruktur. Proyek ini dikembangkan sebagai bagian dari mini project/server project dengan fokus pada implementasi layanan dan arsitektur sistem yang terintegrasi.
 
-* 🔐 **Autentikasi JWT (JSON Web Token)**
+## ‼️Tujuan
 
-  * Register pengguna
-  * Login pengguna
-  * Proteksi route menggunakan token
+* Menyediakan sistem manajemen kelas online yang terstruktur.
+* Memudahkan interaksi antara Admin, Mentor, dan Peserta.
+* Memonitor progres pembelajaran dan aktivitas pengguna.
+* Menerapkan konsep infrastruktur server dan layanan jaringan secara nyata.
 
-* 🗂 **CRUD (Create, Read, Update, Delete)**
+## 👥 Role Pengguna
 
-  * Manajemen data utama aplikasi (misalnya task / catatan / flow)
-  * Terhubung dengan database MongoDB
+1. **Admin**
 
-* 🎨 **Frontend Modern**
+   * Mengelola user (Mentor & Peserta)
+   * Mengelola kelas dan konten
+   * Monitoring sistem dan layanan
 
-  * Menggunakan **Tailwind CSS** untuk styling
-  * UI responsif dan bersih
+2. **Mentor**
 
-* 🌐 **RESTful API**
+   * Mengelola materi kelas
+   * Memberikan tugas dan evaluasi
+   * Memantau progres peserta
 
-  * Backend terpisah dari frontend
-  * Struktur API rapi dan scalable
+3. **Peserta**
+
+   * Mengikuti kelas
+   * Mengakses materi
+   * Melihat progres belajar
+
+## Fitur Utama
+
+* Autentikasi (Login & Registrasi)
+* Dashboard sesuai role
+* Manajemen kelas dan materi
+* Notifikasi dan progres belajar
+* Infrastruktur server pendukung
 
 ## 🛠 Teknologi yang Digunakan
 
@@ -49,8 +63,8 @@ MindFlow adalah sebuah aplikasi berbasis web yang dirancang untuk membantu pengg
 ### 1️⃣ Clone Repository
 
 ```bash
-git clone https://github.com/username/MindFlow.git
-cd MindFlow
+git clone https://github.com/481n4y4/DevClass.git
+cd DevClass
 ```
 
 ### 2️⃣ Setup Backend
@@ -97,9 +111,12 @@ npm run dev
 
 ## 👤 Developer
 
+**Firdaus Pratama Santoso**
 **Kheira Abinaya Gavin Lovedila**
+**Rachel Aulia Maghfi**
+**Riezal Yuan Saputra**
+**Safira Orlin Widyadhana**
 SMK Negeri 7 Semarang
-Bidang Minat: Teknologi Informasi & Web Development
 
 ## 📌 Catatan
 
@@ -107,4 +124,3 @@ Project ini dikembangkan untuk keperluan pembelajaran dan tugas praktik. Struktu
 
 ---
 
-✨ *MindFlow – Think Clearly, Work Smoothly*
