@@ -1,0 +1,12 @@
+@import url("https://fonts.googleapis.com/css2?family=Zalando+Sans:ital,wght@0,200..900;1,200..900&display=swap");
+
+@import "tailwindcss";
+
+:root {
+  --font-sans: "Zalando Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+* {
+  font-family: var(--font-sans);
+}
+    
