@@ -111,11 +111,11 @@ npm run dev
 
 ## 👤 Developer
 
-**Firdaus Pratama Santoso**
-**Kheira Abinaya Gavin Lovedila**
-**Rachel Aulia Maghfi**
-**Riezal Yuan Saputra**
-**Safira Orlin Widyadhana**
+* **Firdaus Pratama Santoso**
+* **Kheira Abinaya Gavin Lovedila**
+* **Rachel Aulia Maghfi**
+* **Riezal Yuan Saputra**
+* **Safira Orlin Widyadhana**
 SMK Negeri 7 Semarang
 
 ## 📌 Catatan
