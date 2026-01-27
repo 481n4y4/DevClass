@@ -2,6 +2,8 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
+import logo from "../assets/img/Logo.png";
+
 // Import Solid Icons
 import {
   faServer,
@@ -69,10 +71,10 @@ const Landing = () => {
   // Background image fallback jika gambar tidak ditemukan
   const backgroundStyle = {
     backgroundImage: `linear-gradient(rgba(0, 41, 102, 0.85), rgba(0, 41, 102, 0.9)), url('/banner.jpg')`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
-    backgroundAttachment: 'fixed',
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+    backgroundAttachment: "fixed",
   };
 
   return (
@@ -82,8 +84,8 @@ const Landing = () => {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             <div className="flex items-center">
-              <div className="bg-blue-600 text-white p-2 rounded-md mr-3">
-                <FontAwesomeIcon icon={faServer} className="text-lg" />
+              <div className=" p-2 rounded-md mr-3">
+                <img src={logo} alt="Logo" className="max-w-12" />
               </div>
               <span className="text-xl font-bold text-blue-900">DevClass</span>
             </div>
@@ -130,7 +132,10 @@ const Landing = () => {
               className="md:hidden text-blue-700"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
-              <FontAwesomeIcon icon={isMenuOpen ? faTimes : faBars} className="text-2xl" />
+              <FontAwesomeIcon
+                icon={isMenuOpen ? faTimes : faBars}
+                className="text-2xl"
+              />
             </button>
           </div>
 
@@ -142,21 +147,30 @@ const Landing = () => {
                   onClick={() => scrollToSection("about")}
                   className="text-blue-700 hover:text-blue-900 font-medium py-2 px-3 transition-colors text-left flex items-center"
                 >
-                  <FontAwesomeIcon icon={faChevronRight} className="mr-2 text-sm" />
+                  <FontAwesomeIcon
+                    icon={faChevronRight}
+                    className="mr-2 text-sm"
+                  />
                   Tentang
                 </button>
                 <button
                   onClick={() => scrollToSection("features")}
                   className="text-blue-700 hover:text-blue-900 font-medium py-2 px-3 transition-colors text-left flex items-center"
                 >
-                  <FontAwesomeIcon icon={faChevronRight} className="mr-2 text-sm" />
+                  <FontAwesomeIcon
+                    icon={faChevronRight}
+                    className="mr-2 text-sm"
+                  />
                   Fitur
                 </button>
                 <button
                   onClick={() => scrollToSection("contact")}
                   className="text-blue-700 hover:text-blue-900 font-medium py-2 px-3 transition-colors text-left flex items-center"
                 >
-                  <FontAwesomeIcon icon={faChevronRight} className="mr-2 text-sm" />
+                  <FontAwesomeIcon
+                    icon={faChevronRight}
+                    className="mr-2 text-sm"
+                  />
                   Kontak
                 </button>
                 <div className="pt-2 border-t border-gray-200">
@@ -184,13 +198,13 @@ const Landing = () => {
       </nav>
 
       {/* Hero Section */}
-      <header 
+      <header
         className="min-h-screen relative overflow-hidden text-white pt-20 md:pt-24"
         style={backgroundStyle}
       >
         {/* Fallback background jika gambar tidak load */}
         <div className="absolute inset-0 bg-gradient-to-r from-blue-900 to-blue-700 opacity-90 md:hidden"></div>
-        
+
         <div className="container relative z-10 mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 lg:py-32 text-center">
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 md:mb-6 leading-tight">
             DevClass — Belajar Server & Jaringan Secara Nyata
@@ -216,7 +230,7 @@ const Landing = () => {
               Lihat Fitur
             </button>
           </div>
-          
+
           {/* Stats Section */}
           <div className="mt-16 sm:mt-20 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 max-w-4xl mx-auto">
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
@@ -225,19 +239,25 @@ const Landing = () => {
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
               <div className="text-2xl sm:text-3xl font-bold mb-1">50+</div>
-              <div className="text-blue-200 text-sm sm:text-base">Modul Praktikum</div>
+              <div className="text-blue-200 text-sm sm:text-base">
+                Modul Praktikum
+              </div>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
               <div className="text-2xl sm:text-3xl font-bold mb-1">24/7</div>
-              <div className="text-blue-200 text-sm sm:text-base">Akses Server</div>
+              <div className="text-blue-200 text-sm sm:text-base">
+                Akses Server
+              </div>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
               <div className="text-2xl sm:text-3xl font-bold mb-1">100%</div>
-              <div className="text-blue-200 text-sm sm:text-base">Praktik Langsung</div>
+              <div className="text-blue-200 text-sm sm:text-base">
+                Praktik Langsung
+              </div>
             </div>
           </div>
         </div>
-        
+
         {/* Scroll indicator */}
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
           <div className="w-6 h-10 border-2 border-white rounded-full flex justify-center">
@@ -260,7 +280,10 @@ const Landing = () => {
             <div className="bg-blue-50 rounded-xl sm:rounded-2xl p-6 sm:p-8 md:p-12 shadow-lg">
               <div className="flex flex-col sm:flex-row items-center mb-6 sm:mb-8">
                 <div className="bg-blue-600 text-white p-3 sm:p-4 rounded-full mb-4 sm:mb-0 sm:mr-6">
-                  <FontAwesomeIcon icon={faServer} className="text-xl sm:text-2xl" />
+                  <FontAwesomeIcon
+                    icon={faServer}
+                    className="text-xl sm:text-2xl"
+                  />
                 </div>
                 <h3 className="text-xl sm:text-2xl font-bold text-blue-900 text-center sm:text-left">
                   Platform Pembelajaran Berbasis Infrastruktur
@@ -510,11 +533,16 @@ const Landing = () => {
             </div>
 
             <div className="mt-12 sm:mt-16 pt-8 sm:pt-10 border-t border-blue-700">
-              <h3 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8">Hubungi Kami</h3>
+              <h3 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8">
+                Hubungi Kami
+              </h3>
               <div className="flex flex-col sm:flex-row justify-center gap-8 sm:gap-10">
                 <div className="flex items-center justify-center sm:justify-start">
                   <div className="bg-blue-700 p-3 rounded-full mr-4">
-                    <FontAwesomeIcon icon={faEnvelope} className="text-lg sm:text-xl" />
+                    <FontAwesomeIcon
+                      icon={faEnvelope}
+                      className="text-lg sm:text-xl"
+                    />
                   </div>
                   <div className="text-left">
                     <div className="font-semibold">Email</div>
@@ -523,7 +551,10 @@ const Landing = () => {
                 </div>
                 <div className="flex items-center justify-center sm:justify-start">
                   <div className="bg-blue-700 p-3 rounded-full mr-4">
-                    <FontAwesomeIcon icon={faPhone} className="text-lg sm:text-xl" />
+                    <FontAwesomeIcon
+                      icon={faPhone}
+                      className="text-lg sm:text-xl"
+                    />
                   </div>
                   <div className="text-left">
                     <div className="font-semibold">Telepon</div>
@@ -574,7 +605,9 @@ const Landing = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 mb-8 lg:mb-0">
               <div>
-                <h3 className="text-lg font-bold mb-4 text-center sm:text-left">Navigasi</h3>
+                <h3 className="text-lg font-bold mb-4 text-center sm:text-left">
+                  Navigasi
+                </h3>
                 <ul className="space-y-2">
                   <li className="text-center sm:text-left">
                     <button
@@ -604,7 +637,9 @@ const Landing = () => {
               </div>
 
               <div>
-                <h3 className="text-lg font-bold mb-4 text-center sm:text-left">Akun</h3>
+                <h3 className="text-lg font-bold mb-4 text-center sm:text-left">
+                  Akun
+                </h3>
                 <ul className="space-y-2">
                   <li className="text-center sm:text-left">
                     <button
