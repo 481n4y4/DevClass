@@ -227,7 +227,7 @@ const Dashboard = () => {
         />
         
         {/* Main Content Area */}
-        <main className="flex-1 lg:ml-64">
+        <main className="flex-1">
           {/* Breadcrumb Component */}
           <Breadcrumb activeTab={activeTab} />
           
