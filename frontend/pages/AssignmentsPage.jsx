@@ -10,11 +10,50 @@ import {
   faClock,
 } from "@fortawesome/free-solid-svg-icons";
 
-const AssignmentsSection = ({ assignments }) => {
+const AssignmentsPage = ({ assignments = [] }) => {
+  // Data default jika tidak ada props
+  const defaultAssignments = [
+    {
+      id: 1,
+      title: "Konfigurasi Apache Web Server",
+      class: "Administrasi Server Linux",
+      dueDate: "15 Des 2024",
+      dueTime: "23:59",
+      status: "pending",
+      submitted: false,
+      points: 100,
+      classId: 1,
+    },
+    {
+      id: 2,
+      title: "Setup DNS Server dengan BIND9",
+      class: "Administrasi Server Linux",
+      dueDate: "18 Des 2024",
+      dueTime: "23:59",
+      status: "pending",
+      submitted: false,
+      points: 100,
+      classId: 1,
+    },
+    {
+      id: 3,
+      title: "Implementasi Firewall dengan iptables",
+      class: "Keamanan Jaringan",
+      dueDate: "12 Des 2024",
+      dueTime: "23:59",
+      status: "overdue",
+      submitted: false,
+      points: 100,
+      classId: 3,
+    },
+  ];
+
+  const assignmentList = assignments.length > 0 ? assignments : defaultAssignments;
+
   // Hitung statistik
-  const pendingCount = assignments.filter(a => !a.submitted && a.status !== 'overdue').length;
-  const overdueCount = assignments.filter(a => a.status === 'overdue').length;
-  const submittedCount = assignments.filter(a => a.submitted).length;
+  const pendingCount = assignmentList.filter(a => !a.submitted && a.status !== 'overdue').length;
+  const overdueCount = assignmentList.filter(a => a.status === 'overdue').length;
+  const submittedCount = assignmentList.filter(a => a.submitted).length;
 
   return (
     <div className="p-6">
@@ -76,12 +115,12 @@ const AssignmentsSection = ({ assignments }) => {
         <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
           <div className="flex justify-between items-center">
             <h3 className="font-bold text-gray-800">Daftar Tugas</h3>
-            <span className="text-sm text-gray-500">{assignments.length} tugas</span>
+            <span className="text-sm text-gray-500">{assignmentList.length} tugas</span>
           </div>
         </div>
         
         <div className="divide-y divide-gray-100">
-          {assignments.map((assignment) => (
+          {assignmentList.map((assignment) => (
             <div key={assignment.id} className="p-6 hover:bg-gray-50 transition-colors">
               <div className="flex flex-col md:flex-row md:items-center justify-between">
                 <div className="mb-4 md:mb-0">
@@ -123,4 +162,4 @@ const AssignmentsSection = ({ assignments }) => {
   );
 };
 
-export default AssignmentsSection;
+export default AssignmentsPage;
