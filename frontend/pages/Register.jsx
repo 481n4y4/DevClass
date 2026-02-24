@@ -127,16 +127,16 @@ export default function Register() {
           <Link to="/" className="inline-block">
             <div className="flex items-center justify-center mb-4">
               <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-blue-600 to-blue-800 flex items-center justify-center mr-3">
-                <span className="text-white font-bold text-2xl">MF</span>
+                <span className="text-white font-bold text-2xl">DC</span>
               </div>
               <h1 className="text-3xl font-bold text-gray-900">
-                Mind<span className="text-blue-600">Flow</span>
+                Dev<span className="text-blue-600">Class</span>
               </h1>
             </div>
           </Link>
           <h2 className="text-2xl font-bold text-gray-800">Buat Akun Baru</h2>
           <p className="text-gray-600 mt-2">
-            Bergabung dengan MindFlow untuk mengelola alur kerja Anda
+            Bergabung dengan DevClass untuk mendukung pembelajaran yang terpusat, aman, dan mudah diakses.
           </p>
         </div>
 
@@ -384,7 +384,7 @@ export default function Register() {
               </Link>
             </p>
             <p className="mt-4 text-sm text-gray-500">
-              Dengan mendaftar, Anda mendapatkan akses ke semua fitur MindFlow untuk mengelola alur kerja dan produktivitas Anda.
+              Dengan mendaftar, Anda mendapatkan akses ke seluruh fitur DevClass untuk mendukung pembelajaran pemrograman secara online dan terpusat.
             </p>
           </div>
         </div>
