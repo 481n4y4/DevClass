@@ -9,7 +9,33 @@ import {
   faFolder,
 } from "@fortawesome/free-solid-svg-icons";
 
-const AnnouncementsSection = ({ announcements }) => {
+const AnnouncementsPage = ({ announcements = [] }) => {
+  // Data default jika tidak ada props
+  const defaultAnnouncements = [
+    {
+      id: 1,
+      title: "Maintenance Server Praktikum",
+      class: "Administrasi Server Linux",
+      teacher: "Prof. Ahmad Riyadi",
+      date: "10 Des 2024",
+      content: "Server praktikum akan offline pada Sabtu, 14 Desember 2024 pukul 00:00 - 06:00 WIB untuk maintenance rutin.",
+      important: true,
+      classId: 1,
+    },
+    {
+      id: 2,
+      title: "Jadwal Ujian Akhir Semester",
+      class: "Keamanan Jaringan",
+      teacher: "Ir. Bambang Sutrisno",
+      date: "8 Des 2024",
+      content: "UAS akan dilaksanakan pada tanggal 22 Desember 2024 secara online melalui platform DevClass.",
+      important: true,
+      classId: 3,
+    },
+  ];
+
+  const announcementList = announcements.length > 0 ? announcements : defaultAnnouncements;
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -21,7 +47,7 @@ const AnnouncementsSection = ({ announcements }) => {
       </div>
       
       <div className="space-y-6">
-        {announcements.map((announcement) => (
+        {announcementList.map((announcement) => (
           <div key={announcement.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
@@ -66,4 +92,4 @@ const AnnouncementsSection = ({ announcements }) => {
   );
 };
 
-export default AnnouncementsSection;
+export default AnnouncementsPage;

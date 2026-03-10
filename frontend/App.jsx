@@ -1,9 +1,12 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import LandingPage from "./pages/Landing";
-import Class from "./pages/Class";
+// import Class from "./pages/Class";
+import ClassesPage from "./pages/ClassesPage";
+import AssignmentsPage from "./pages/AssignmentsPage";
+import AnnouncementsPage from "./pages/AnnouncementsPage";
 
 
 const ProtectedRoute = ({ children }) => {
@@ -15,13 +18,18 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
-
         <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/class" element={<Class />} />
         
+        {/* Main Dashboard Layout */}
+        <Route path="/dashboard" element={<Dashboard />}>
+          <Route index element={<ClassesPage />} />
+          <Route path="classes" element={<ClassesPage />} />
+          <Route path="assignments" element={<AssignmentsPage />} />
+          <Route path="announcements" element={<AnnouncementsPage />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );
