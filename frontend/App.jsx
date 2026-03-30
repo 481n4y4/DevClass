@@ -7,6 +7,10 @@ import LandingPage from "./pages/Landing";
 import ClassesPage from "./pages/ClassesPage";
 import AssignmentsPage from "./pages/AssignmentsPage";
 import AnnouncementsPage from "./pages/AnnouncementsPage";
+import Materials from "./pages/Materials";
+import Bergabung from "./pages/Bergabung";
+import Buatkelas from "./pages/Buatkelas";
+
 
 
 const ProtectedRoute = ({ children }) => {
@@ -30,6 +34,13 @@ export default function App() {
           <Route path="assignments" element={<AssignmentsPage />} />
           <Route path="announcements" element={<AnnouncementsPage />} />
         </Route>
+
+          <Route path="/material" element={<Materials />} />
+           <Route path="/bergabung" element={<Bergabung />} />
+            <Route path="/buatkelas" element={<Buatkelas />} />
+
+           
+
       </Routes>
     </BrowserRouter>
   );
