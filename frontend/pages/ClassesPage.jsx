@@ -11,7 +11,7 @@ import {
   faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
-import { defaultClasses } from "../data/defaultClasses"; // Import dari file terpisah
+import { defaultClasses } from "../data/defaultClasses";
 
 const ClassesPage = ({ classes = [], onClassClick }) => {
   const navigate = useNavigate();
@@ -20,9 +20,69 @@ const ClassesPage = ({ classes = [], onClassClick }) => {
   const classList = classes.length > 0 ? classes : defaultClasses;
 
   const handleClassClick = (classId) => {
+    // Jika ada onClassClick dari props, panggil
     if (onClassClick) {
       onClassClick(classId);
     }
+    // Navigasi ke halaman detail kelas
+    navigate(`/class/${classId}`);
+  };
+
+  // Helper untuk mendapatkan jumlah tugas yang belum selesai
+  const getPendingAssignments = (classItem) => {
+    // Cek apakah menggunakan assignmentsDue atau assignmentsList
+    if (classItem.assignmentsDue !== undefined) {
+      return classItem.assignmentsDue;
+    }
+    if (classItem.assignmentsList) {
+      return classItem.assignmentsList.filter(a => a.submitted < a.total).length;
+    }
+    return 0;
+  };
+
+  // Helper untuk mendapatkan jumlah pengumuman
+  const getAnnouncementCount = (classItem) => {
+    // Cek apakah menggunakan announcements atau announcementsList
+    if (classItem.announcements !== undefined) {
+      return classItem.announcements;
+    }
+    if (classItem.announcementsList) {
+      return classItem.announcementsList.length;
+    }
+    return 0;
+  };
+
+  // Helper untuk mendapatkan nama pengajar
+  const getTeacherName = (classItem) => {
+    if (classItem.teacher) {
+      return classItem.teacher;
+    }
+    if (classItem.instructor && classItem.instructor.name) {
+      return classItem.instructor.name;
+    }
+    return "Instruktur";
+  };
+
+  // Helper untuk mendapatkan jumlah siswa
+  const getStudentCount = (classItem) => {
+    if (classItem.students) {
+      return classItem.students;
+    }
+    if (classItem.instructor && classItem.instructor.students) {
+      return classItem.instructor.students;
+    }
+    return 0;
+  };
+
+  // Helper untuk mendapatkan nama kelas
+  const getClassName = (classItem) => {
+    if (classItem.name) {
+      return classItem.name;
+    }
+    if (classItem.title) {
+      return classItem.title;
+    }
+    return "Kelas";
   };
 
   return (
@@ -57,18 +117,18 @@ const ClassesPage = ({ classes = [], onClassClick }) => {
             <div className="p-5">
               <div className="flex justify-between items-start mb-3">
                 <h3 className="text-lg font-bold text-gray-800">
-                  {classItem.name}
+                  {getClassName(classItem)}
                 </h3>
                 <span className="text-sm font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
                   {classItem.code}
                 </span>
               </div>
-              <p className="text-gray-600 mb-4">{classItem.teacher}</p>
+              <p className="text-gray-600 mb-4">{getTeacherName(classItem)}</p>
 
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center text-sm text-gray-500">
                   <FontAwesomeIcon icon={faUsers} className="mr-2" />
-                  {classItem.students} siswa
+                  {getStudentCount(classItem)} siswa
                 </div>
                 <div className="flex items-center text-sm text-gray-500">
                   <FontAwesomeIcon icon={faClock} className="mr-2" />
@@ -97,19 +157,19 @@ const ClassesPage = ({ classes = [], onClassClick }) => {
 
               <div className="flex justify-between pt-4 border-t border-gray-100">
                 <div className="flex space-x-4">
-                  {classItem.assignmentsDue > 0 && (
+                  {getPendingAssignments(classItem) > 0 && (
                     <div className="flex items-center text-red-600">
                       <FontAwesomeIcon icon={faTasks} className="mr-1" />
                       <span className="text-sm font-medium">
-                        {classItem.assignmentsDue}
+                        {getPendingAssignments(classItem)} Tugas
                       </span>
                     </div>
                   )}
-                  {classItem.announcements > 0 && (
+                  {getAnnouncementCount(classItem) > 0 && (
                     <div className="flex items-center text-blue-600">
                       <FontAwesomeIcon icon={faComment} className="mr-1" />
                       <span className="text-sm font-medium">
-                        {classItem.announcements}
+                        {getAnnouncementCount(classItem)}
                       </span>
                     </div>
                   )}

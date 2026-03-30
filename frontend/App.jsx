@@ -35,9 +35,9 @@ export default function App() {
           <Route path="announcements" element={<AnnouncementsPage />} />
         </Route>
 
-          <Route path="/material" element={<Materials />} />
-           <Route path="/bergabung" element={<Bergabung />} />
-            <Route path="/buatkelas" element={<Buatkelas />} />
+        <Route path="/class/:id" element={<Materials />} />
+        <Route path="/bergabung" element={<Bergabung />} />
+        <Route path="/buatkelas" element={<Buatkelas />} />
       </Routes>
     </BrowserRouter>
   );
