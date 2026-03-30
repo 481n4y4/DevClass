@@ -1,10 +1,12 @@
 // App.jsx
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import { getClassById } from "../data/defaultClasses";
+import HeaderBack from "../components/HeaderBack";
 
 export default function Bergabung() {
-  const [joinMethod, setJoinMethod] = useState('code');
-  const [classCode, setClassCode] = useState('');
-  const [inviteLink, setInviteLink] = useState('');
+  const [joinMethod, setJoinMethod] = useState("code");
+  const [classCode, setClassCode] = useState("");
+  const [inviteLink, setInviteLink] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
 
   const popularClasses = [
@@ -14,7 +16,7 @@ export default function Bergabung() {
       code: "ASL-2024-01",
       instructor: "Prof. Ahmad Riyadi",
       students: 35,
-      thumbnail: "🐧"
+      thumbnail: "🐧",
     },
     {
       id: 2,
@@ -22,7 +24,7 @@ export default function Bergabung() {
       code: "JC-2024-02",
       instructor: "Dr. Siti Mawar",
       students: 28,
-      thumbnail: "🌐"
+      thumbnail: "🌐",
     },
     {
       id: 3,
@@ -30,8 +32,8 @@ export default function Bergabung() {
       code: "CC-2024-01",
       instructor: "Dr. Rizky Pratama",
       students: 39,
-      thumbnail: "☁️"
-    }
+      thumbnail: "☁️",
+    },
   ];
 
   const handleJoinClass = (e) => {
@@ -43,44 +45,26 @@ export default function Bergabung() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Top Navigation */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 px-8 py-4 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-8">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              DevClass
-            </h1>
-            <div className="flex items-center gap-2 text-sm text-slate-500">
-              <a href="#" className="hover:text-slate-700">Dashboard</a>
-              <i className="fa-solid fa-chevron-right text-xs"></i>
-              <a href="#" className="hover:text-slate-700">Classes</a>
-              <i className="fa-solid fa-chevron-right text-xs"></i>
-              <span className="text-slate-700 font-medium">Bergabung dengan Kelas</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <button className="p-2 hover:bg-slate-100 rounded-full relative">
-              <i className="fa-regular fa-bell text-slate-600"></i>
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full flex items-center justify-center">
-                <span className="text-sm font-semibold">AR</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <HeaderBack
+        showBackButton={true}
+        backTo="/dashboard"
+        userName="Ahmad Student"
+        userInitials="AS"
+      />
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-8 py-12">
+      <div className="max-w-7xl mx-auto px-8 py-12 mt-14">
         {/* Header Section */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-4">
             <i className="fa-solid fa-door-open text-4xl text-blue-600"></i>
           </div>
-          <h2 className="text-4xl font-bold text-slate-800 mb-3">Bergabung dengan Kelas</h2>
+          <h2 className="text-4xl font-bold text-slate-800 mb-3">
+            Bergabung dengan Kelas
+          </h2>
           <p className="text-slate-500 max-w-2xl mx-auto">
-            Masuk ke kelas menggunakan kode undangan atau link invite yang diberikan oleh instruktur Anda
+            Masuk ke kelas menggunakan kode undangan atau link invite yang
+            diberikan oleh instruktur Anda
           </p>
         </div>
 
@@ -92,10 +76,17 @@ export default function Bergabung() {
                 <i className="fa-regular fa-circle-check text-green-600"></i>
               </div>
               <div className="flex-1">
-                <p className="text-green-800 font-medium">Berhasil Bergabung!</p>
-                <p className="text-green-600 text-sm">Anda sekarang terdaftar di kelas Administrasi Server Linux</p>
+                <p className="text-green-800 font-medium">
+                  Berhasil Bergabung!
+                </p>
+                <p className="text-green-600 text-sm">
+                  Anda sekarang terdaftar di kelas Administrasi Server Linux
+                </p>
               </div>
-              <button onClick={() => setShowSuccess(false)} className="text-green-600 hover:text-green-800">
+              <button
+                onClick={() => setShowSuccess(false)}
+                className="text-green-600 hover:text-green-800"
+              >
                 <i className="fa-regular fa-xmark"></i>
               </button>
             </div>
@@ -107,22 +98,22 @@ export default function Bergabung() {
           {/* Method Toggle */}
           <div className="bg-white rounded-xl p-2 inline-flex mb-6 border border-slate-200">
             <button
-              onClick={() => setJoinMethod('code')}
+              onClick={() => setJoinMethod("code")}
               className={`px-6 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-                joinMethod === 'code' 
-                  ? 'bg-blue-600 text-white shadow-md' 
-                  : 'text-slate-600 hover:bg-slate-100'
+                joinMethod === "code"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "text-slate-600 hover:bg-slate-100"
               }`}
             >
               <i className="fa-regular fa-key"></i>
               Kode Kelas
             </button>
             <button
-              onClick={() => setJoinMethod('link')}
+              onClick={() => setJoinMethod("link")}
               className={`px-6 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-                joinMethod === 'link' 
-                  ? 'bg-blue-600 text-white shadow-md' 
-                  : 'text-slate-600 hover:bg-slate-100'
+                joinMethod === "link"
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "text-slate-600 hover:bg-slate-100"
               }`}
             >
               <i className="fa-regular fa-link"></i>
@@ -133,7 +124,7 @@ export default function Bergabung() {
           {/* Form Card */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
             <div className="p-8">
-              {joinMethod === 'code' ? (
+              {joinMethod === "code" ? (
                 <form onSubmit={handleJoinClass}>
                   <div className="mb-6">
                     <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -144,7 +135,9 @@ export default function Bergabung() {
                       <input
                         type="text"
                         value={classCode}
-                        onChange={(e) => setClassCode(e.target.value.toUpperCase())}
+                        onChange={(e) =>
+                          setClassCode(e.target.value.toUpperCase())
+                        }
                         placeholder="Contoh: ASL-2024-01"
                         className="w-full px-4 py-3 pl-12 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                         required
@@ -153,7 +146,8 @@ export default function Bergabung() {
                     </div>
                     <p className="text-xs text-slate-400 mt-2">
                       <i className="fa-regular fa-circle-info mr-1"></i>
-                      Kode kelas biasanya terdiri dari 3 huruf diikuti angka (contoh: ASL-2024-01)
+                      Kode kelas biasanya terdiri dari 3 huruf diikuti angka
+                      (contoh: ASL-2024-01)
                     </p>
                   </div>
 
@@ -247,9 +241,12 @@ export default function Bergabung() {
                 <i className="fa-regular fa-circle-question text-blue-600"></i>
               </div>
               <div>
-                <h4 className="font-semibold text-slate-800 mb-1">Tidak punya kode kelas?</h4>
+                <h4 className="font-semibold text-slate-800 mb-1">
+                  Tidak punya kode kelas?
+                </h4>
                 <p className="text-sm text-slate-600 mb-3">
-                  Kode kelas diberikan oleh instruktur Anda. Jika Anda belum memilikinya, hubungi instruktur atau:
+                  Kode kelas diberikan oleh instruktur Anda. Jika Anda belum
+                  memilikinya, hubungi instruktur atau:
                 </p>
                 <div className="flex gap-3">
                   <button className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1">
@@ -274,7 +271,10 @@ export default function Bergabung() {
               <i className="fa-regular fa-fire-flame-curved text-orange-500 mr-2"></i>
               Kelas Populer Saat Ini
             </h3>
-            <a href="#" className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1">
+            <a
+              href="#"
+              className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+            >
               Lihat Semua
               <i className="fa-regular fa-arrow-right"></i>
             </a>
@@ -282,14 +282,21 @@ export default function Bergabung() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {popularClasses.map((classItem) => (
-              <div key={classItem.id} className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-lg transition-all group">
+              <div
+                key={classItem.id}
+                className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-lg transition-all group"
+              >
                 <div className="flex items-start gap-4">
                   <div className="w-14 h-14 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
                     {classItem.thumbnail}
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-slate-800 mb-1">{classItem.title}</h4>
-                    <p className="text-xs text-slate-400 mb-2">{classItem.code}</p>
+                    <h4 className="font-semibold text-slate-800 mb-1">
+                      {classItem.title}
+                    </h4>
+                    <p className="text-xs text-slate-400 mb-2">
+                      {classItem.code}
+                    </p>
                     <div className="flex items-center gap-3 text-xs text-slate-500">
                       <div className="flex items-center gap-1">
                         <i className="fa-regular fa-user"></i>
@@ -324,9 +331,12 @@ export default function Bergabung() {
                   <i className="fa-regular fa-key text-blue-600 text-sm"></i>
                 </div>
                 <div>
-                  <h4 className="font-medium text-slate-800 mb-2">Dimana saya mendapatkan kode kelas?</h4>
+                  <h4 className="font-medium text-slate-800 mb-2">
+                    Dimana saya mendapatkan kode kelas?
+                  </h4>
                   <p className="text-sm text-slate-500">
-                    Kode kelas diberikan oleh instruktur melalui email, platform pembelajaran, atau saat sesi kelas pertama.
+                    Kode kelas diberikan oleh instruktur melalui email, platform
+                    pembelajaran, atau saat sesi kelas pertama.
                   </p>
                 </div>
               </div>
@@ -337,9 +347,12 @@ export default function Bergabung() {
                   <i className="fa-regular fa-clock text-blue-600 text-sm"></i>
                 </div>
                 <div>
-                  <h4 className="font-medium text-slate-800 mb-2">Apakah kode kelas memiliki masa berlaku?</h4>
+                  <h4 className="font-medium text-slate-800 mb-2">
+                    Apakah kode kelas memiliki masa berlaku?
+                  </h4>
                   <p className="text-sm text-slate-500">
-                    Ya, sebagian besar kode kelas berlaku selama 7 hari atau hingga kuota peserta terpenuhi.
+                    Ya, sebagian besar kode kelas berlaku selama 7 hari atau
+                    hingga kuota peserta terpenuhi.
                   </p>
                 </div>
               </div>
@@ -350,9 +363,12 @@ export default function Bergabung() {
                   <i className="fa-regular fa-arrows-rotate text-blue-600 text-sm"></i>
                 </div>
                 <div>
-                  <h4 className="font-medium text-slate-800 mb-2">Kode kelas tidak valid, apa yang harus dilakukan?</h4>
+                  <h4 className="font-medium text-slate-800 mb-2">
+                    Kode kelas tidak valid, apa yang harus dilakukan?
+                  </h4>
                   <p className="text-sm text-slate-500">
-                    Pastikan kode yang dimasukkan benar. Jika masih bermasalah, hubungi instruktur untuk mendapatkan kode baru.
+                    Pastikan kode yang dimasukkan benar. Jika masih bermasalah,
+                    hubungi instruktur untuk mendapatkan kode baru.
                   </p>
                 </div>
               </div>
@@ -363,9 +379,12 @@ export default function Bergabung() {
                   <i className="fa-regular fa-users text-blue-600 text-sm"></i>
                 </div>
                 <div>
-                  <h4 className="font-medium text-slate-800 mb-2">Bisakah bergabung dengan lebih dari satu kelas?</h4>
+                  <h4 className="font-medium text-slate-800 mb-2">
+                    Bisakah bergabung dengan lebih dari satu kelas?
+                  </h4>
                   <p className="text-sm text-slate-500">
-                    Ya, Anda dapat bergabung dengan banyak kelas menggunakan kode yang berbeda dari masing-masing instruktur.
+                    Ya, Anda dapat bergabung dengan banyak kelas menggunakan
+                    kode yang berbeda dari masing-masing instruktur.
                   </p>
                 </div>
               </div>
@@ -392,4 +411,4 @@ export default function Bergabung() {
       `}</style>
     </div>
   );
-};
+}
