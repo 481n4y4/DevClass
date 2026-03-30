@@ -3,9 +3,16 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import LandingPage from "./pages/Landing";
+// import Class from "./pages/Class";
 import ClassesPage from "./pages/ClassesPage";
 import AssignmentsPage from "./pages/AssignmentsPage";
 import AnnouncementsPage from "./pages/AnnouncementsPage";
+
+
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem("token");
+  return token ? children : <Navigate to="/" />;
+};
 
 export default function App() {
   return (

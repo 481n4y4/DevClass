@@ -10,7 +10,8 @@ import {
   faComment,
 } from "@fortawesome/free-solid-svg-icons";
 
-const ClassesSection = ({ classes, onClassClick }) => {
+const Class = ({ classes, onClassClick }) => {
+  const [activeTab, setActiveTab] = useState("classes");
   return (
     <div className="p-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
@@ -107,4 +108,4 @@ const ClassesSection = ({ classes, onClassClick }) => {
   );
 };
 
-export default ClassesSection;
+export default Class;
