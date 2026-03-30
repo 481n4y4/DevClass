@@ -38,9 +38,6 @@ export default function App() {
           <Route path="/material" element={<Materials />} />
            <Route path="/bergabung" element={<Bergabung />} />
             <Route path="/buatkelas" element={<Buatkelas />} />
-
-           
-
       </Routes>
     </BrowserRouter>
   );
