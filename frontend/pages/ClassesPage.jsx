@@ -9,13 +9,15 @@ import {
   faComment,
   faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
+import { useNavigate } from "react-router-dom";
 
 const ClassesPage = ({ classes = [], onClassClick }) => {
   // Data default jika tidak ada props
+  const navigate = useNavigate();
   const defaultClasses = [
     {
       id: 1,
-      name: "Administrasi Server Linux",
+      name: "Administrasi Server Linux" ,
       code: "ASL-2024-01",
       teacher: "Prof. Ahmad Riyadi",
       color: "bg-blue-500",
@@ -66,7 +68,7 @@ const ClassesPage = ({ classes = [], onClassClick }) => {
           Kelas Anda
         </h2>
         <div className="flex space-x-3">
-          <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors" onClick={() => navigate("/bergabung")}>
             <FontAwesomeIcon icon={faPlus} className="mr-2" />
             Bergabung dengan Kelas
           </button>
@@ -140,7 +142,7 @@ const ClassesPage = ({ classes = [], onClassClick }) => {
                   )}
                 </div>
                 <button className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
-                  Buka{" "}
+                  Buka { }
                   <FontAwesomeIcon
                     icon={faChevronRight}
                     className="ml-1 text-xs"
@@ -162,7 +164,7 @@ const ClassesPage = ({ classes = [], onClassClick }) => {
           <p className="text-gray-500 text-center text-sm mb-4">
             Hanya tersedia untuk pengajar
           </p>
-          <button className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+          <button className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors" onClick={() => navigate("/buatkelas")}> 
             Buat Kelas
           </button>
         </div>
