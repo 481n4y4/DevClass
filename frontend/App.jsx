@@ -12,7 +12,7 @@ import Bergabung from "./pages/Bergabung";
 import Buatkelas from "./pages/Buatkelas";
 import Kerjakan from "./pages/Kerjakan";
 import BuatPengumuman from "./pages/BuatPengumuman";
-
+import Selengkapnya from "./pages/Selengkapnya";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -41,6 +41,7 @@ export default function App() {
         <Route path="/buatkelas" element={<Buatkelas />} />
         <Route path="/kerjakan" element={<Kerjakan />} />
         <Route path="/buatpengumuman" element={<BuatPengumuman />} />
+        <Route path="/selengkapnya" element={<Selengkapnya />} />
       </Routes>
     </BrowserRouter>
   );

@@ -82,7 +82,7 @@ const AnnouncementsPage = ({ announcements = [] }) => {
                     <span>Lampiran</span>
                   </button>
                 </div>
-                <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                <button onClick={() => navigate("/selengkapnya")} className="text-blue-600 hover:text-blue-800 text-sm font-medium">
                   Selengkapnya
                 </button>
               </div>
