@@ -8,8 +8,10 @@ import {
   faComment,
   faFolder,
 } from "@fortawesome/free-solid-svg-icons";
+import { useNavigate } from "react-router-dom";
 
 const AnnouncementsPage = ({ announcements = [] }) => {
+  const navigate = useNavigate(); 
   // Data default jika tidak ada props
   const defaultAnnouncements = [
     {
@@ -40,7 +42,7 @@ const AnnouncementsPage = ({ announcements = [] }) => {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Pengumuman</h2>
-        <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+        <button onClick={() => navigate("/buatpengumuman")} className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
           <FontAwesomeIcon icon={faPlus} className="mr-2" />
           Buat Pengumuman
         </button>
