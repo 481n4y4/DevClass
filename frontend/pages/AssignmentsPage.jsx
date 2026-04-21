@@ -9,8 +9,10 @@ import {
   faBook,
   faClock,
 } from "@fortawesome/free-solid-svg-icons";
+import { useNavigate } from "react-router-dom";
 
 const AssignmentsPage = ({ assignments = [] }) => {
+  const navigate = useNavigate(); 
   // Data default jika tidak ada props
   const defaultAssignments = [
     {
@@ -149,7 +151,7 @@ const AssignmentsPage = ({ assignments = [] }) => {
                     <p className="text-sm text-gray-500">Nilai</p>
                     <p className="font-bold text-gray-800">{assignment.points} poin</p>
                   </div>
-                  <button className={`px-4 py-2 rounded-lg font-medium ${assignment.submitted ? 'bg-gray-100 text-gray-700' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
+                  <button  onClick={() => navigate("/kerjakan")} className={`px-4 py-2 rounded-lg font-medium ${assignment.submitted ? 'bg-gray-100 text-gray-700' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
                     {assignment.submitted ? 'Lihat Detail' : 'Kerjakan'}
                   </button>
                 </div>
