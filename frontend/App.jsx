@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -16,7 +16,7 @@ import Selengkapnya from "./pages/Selengkapnya";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
-  return token ? children : <Navigate to="/" />;
+  return token ? children : <Navigate to="/login" replace />;
 };
 
 export default function App() {
@@ -27,21 +27,70 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        
+
         {/* Main Dashboard Layout */}
-        <Route path="/dashboard" element={<Dashboard />}>
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<ClassesPage />} />
           <Route path="classes" element={<ClassesPage />} />
           <Route path="assignments" element={<AssignmentsPage />} />
           <Route path="announcements" element={<AnnouncementsPage />} />
         </Route>
 
-        <Route path="/class/:id" element={<Materials />} />
-        <Route path="/bergabung" element={<Bergabung />} />
-        <Route path="/buatkelas" element={<Buatkelas />} />
-        <Route path="/kerjakan" element={<Kerjakan />} />
-        <Route path="/buatpengumuman" element={<BuatPengumuman />} />
-        <Route path="/selengkapnya" element={<Selengkapnya />} />
+        <Route
+          path="/class/:id"
+          element={
+            <ProtectedRoute>
+              <Materials />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bergabung"
+          element={
+            <ProtectedRoute>
+              <Bergabung />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/buatkelas"
+          element={
+            <ProtectedRoute>
+              <Buatkelas />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/kerjakan"
+          element={
+            <ProtectedRoute>
+              <Kerjakan />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/buatpengumuman"
+          element={
+            <ProtectedRoute>
+              <BuatPengumuman />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/selengkapnya"
+          element={
+            <ProtectedRoute>
+              <Selengkapnya />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );

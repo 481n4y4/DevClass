@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import { loginUser } from "../services/auth";
 import { useNavigate, Link } from "react-router-dom";
 import logo from "../assets/img/Logo.png";
 
@@ -29,20 +29,10 @@ export default function Login() {
     }
 
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/auth/login",
-        {
-          email,
-          password,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
-      );
-
-      const token = response.data.token;
+      const { token } = await loginUser({
+        email,
+        password,
+      });
 
       // Simpan token
       localStorage.setItem("token", token);
