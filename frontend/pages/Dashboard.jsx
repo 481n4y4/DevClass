@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { logoutUser } from "../services/auth";
 
 // Import components
 import Header from "../components/Header";
@@ -143,7 +144,8 @@ const Dashboard = () => {
       class: "Administrasi Server Linux",
       teacher: "Prof. Ahmad Riyadi",
       date: "10 Des 2024",
-      content: "Server praktikum akan offline pada Sabtu, 14 Desember 2024 pukul 00:00 - 06:00 WIB untuk maintenance rutin.",
+      content:
+        "Server praktikum akan offline pada Sabtu, 14 Desember 2024 pukul 00:00 - 06:00 WIB untuk maintenance rutin.",
       important: true,
       classId: 1,
     },
@@ -153,7 +155,8 @@ const Dashboard = () => {
       class: "Keamanan Jaringan",
       teacher: "Ir. Bambang Sutrisno",
       date: "8 Des 2024",
-      content: "UAS akan dilaksanakan pada tanggal 22 Desember 2024 secara online melalui platform DevClass.",
+      content:
+        "UAS akan dilaksanakan pada tanggal 22 Desember 2024 secara online melalui platform DevClass.",
       important: true,
       classId: 3,
     },
@@ -163,22 +166,54 @@ const Dashboard = () => {
       class: "Virtualisasi Server",
       teacher: "Diana Putri, M.Kom",
       date: "5 Des 2024",
-      content: "Saya telah menambahkan materi tambahan tentang Docker Container di bagian materi minggu ini.",
+      content:
+        "Saya telah menambahkan materi tambahan tentang Docker Container di bagian materi minggu ini.",
       important: false,
       classId: 4,
     },
   ]);
 
   const [calendarEvents] = useState([
-    { id: 1, title: "Batas Pengumpulan Tugas Apache", date: "15 Des", class: "ASL", type: "assignment" },
-    { id: 2, title: "Kuis Jaringan Komputer", date: "16 Des", class: "JKL", type: "quiz" },
-    { id: 3, title: "Ujian Keamanan Jaringan", date: "22 Des", class: "KJ", type: "exam" },
-    { id: 4, title: "Presentasi Proyek", date: "18 Des", class: "VS", type: "presentation" },
+    {
+      id: 1,
+      title: "Batas Pengumpulan Tugas Apache",
+      date: "15 Des",
+      class: "ASL",
+      type: "assignment",
+    },
+    {
+      id: 2,
+      title: "Kuis Jaringan Komputer",
+      date: "16 Des",
+      class: "JKL",
+      type: "quiz",
+    },
+    {
+      id: 3,
+      title: "Ujian Keamanan Jaringan",
+      date: "22 Des",
+      class: "KJ",
+      type: "exam",
+    },
+    {
+      id: 4,
+      title: "Presentasi Proyek",
+      date: "18 Des",
+      class: "VS",
+      type: "presentation",
+    },
   ]);
 
   // Handle logout
-  const handleLogout = () => {
-    navigate("/");
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+    } catch (error) {
+      console.error("Logout gagal:", error);
+    } finally {
+      localStorage.removeItem("token");
+      navigate("/login");
+    }
   };
 
   // Handle navigasi ke kelas tertentu
@@ -195,7 +230,9 @@ const Dashboard = () => {
   const renderContent = () => {
     switch (activeTab) {
       case "classes":
-        return <ClassesPage classes={classes} onClassClick={handleClassClick} />;
+        return (
+          <ClassesPage classes={classes} onClassClick={handleClassClick} />
+        );
       case "assignments":
         return <AssignmentsPage assignments={assignments} />;
       case "calendar":
@@ -203,38 +240,35 @@ const Dashboard = () => {
       case "announcements":
         return <AnnouncementsPage announcements={announcements} />;
       default:
-        return <ClassesPage classes={classes} onClassClick={handleClassClick} />;
+        return (
+          <ClassesPage classes={classes} onClassClick={handleClassClick} />
+        );
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       {/* Header Component */}
-      <Header 
-        toggleSidebar={toggleSidebar}
-        isSidebarOpen={isSidebarOpen}
-      />
-      
+      <Header toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
+
       {/* Main Content */}
       <div className="flex pt-16">
         {/* Sidebar Component */}
-        <Sidebar 
+        <Sidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           handleLogout={handleLogout}
           navigate={navigate}
           isSidebarOpen={isSidebarOpen}
         />
-        
+
         {/* Main Content Area */}
         <main className="flex-1">
           {/* Breadcrumb Component */}
           <Breadcrumb activeTab={activeTab} />
-          
+
           {/* Content */}
-          <div className="pb-8">
-            {renderContent()}
-          </div>
+          <div className="pb-8">{renderContent()}</div>
         </main>
       </div>
     </div>
