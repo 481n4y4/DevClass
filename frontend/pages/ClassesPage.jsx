@@ -1,5 +1,5 @@
 // ClassesPage.jsx
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPlus,
@@ -12,12 +12,49 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
 import { defaultClasses } from "../data/defaultClasses";
+import api from "../api/axios";
 
 const ClassesPage = ({ classes = [], onClassClick }) => {
   const navigate = useNavigate();
-  
-  // Gunakan data dari import jika tidak ada props
-  const classList = classes.length > 0 ? classes : defaultClasses;
+  const [fetchedClasses, setFetchedClasses] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    if (classes.length > 0) {
+      return;
+    }
+
+    const fetchClasses = async () => {
+      setIsLoading(true);
+      setErrorMessage("");
+
+      try {
+        const response = await api.get("/classes");
+        const data = Array.isArray(response.data)
+          ? response.data
+          : response.data?.data || [];
+        setFetchedClasses(data);
+      } catch (error) {
+        console.error("Gagal memuat kelas:", error);
+        setErrorMessage("Gagal memuat kelas. Silakan coba lagi.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchClasses();
+  }, [classes.length]);
+
+  const classList = useMemo(() => {
+    if (classes.length > 0) {
+      return classes;
+    }
+    if (fetchedClasses.length > 0) {
+      return fetchedClasses;
+    }
+    return defaultClasses;
+  }, [classes, fetchedClasses]);
 
   const handleClassClick = (classId) => {
     // Jika ada onClassClick dari props, panggil
@@ -35,7 +72,8 @@ const ClassesPage = ({ classes = [], onClassClick }) => {
       return classItem.assignmentsDue;
     }
     if (classItem.assignmentsList) {
-      return classItem.assignmentsList.filter(a => a.submitted < a.total).length;
+      return classItem.assignmentsList.filter((a) => a.submitted < a.total)
+        .length;
     }
     return 0;
   };
@@ -92,8 +130,8 @@ const ClassesPage = ({ classes = [], onClassClick }) => {
           Kelas Anda
         </h2>
         <div className="flex space-x-3">
-          <button 
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors" 
+          <button
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             onClick={() => navigate("/bergabung")}
           >
             <FontAwesomeIcon icon={faPlus} className="mr-2" />
@@ -105,6 +143,18 @@ const ClassesPage = ({ classes = [], onClassClick }) => {
           </button>
         </div>
       </div>
+
+      {errorMessage && (
+        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm font-medium text-red-600">{errorMessage}</p>
+        </div>
+      )}
+
+      {isLoading && (
+        <div className="mb-6 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3">
+          <p className="text-sm font-medium text-blue-600">Memuat kelas...</p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {classList.map((classItem) => (
@@ -144,10 +194,10 @@ const ClassesPage = ({ classes = [], onClassClick }) => {
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
                     className={`h-2 rounded-full ${
-                      classItem.progress === 100 
-                        ? "bg-green-500" 
-                        : classItem.progress > 50 
-                          ? "bg-blue-500" 
+                      classItem.progress === 100
+                        ? "bg-green-500"
+                        : classItem.progress > 50
+                          ? "bg-blue-500"
                           : "bg-yellow-500"
                     }`}
                     style={{ width: `${classItem.progress}%` }}
@@ -194,10 +244,10 @@ const ClassesPage = ({ classes = [], onClassClick }) => {
           <p className="text-gray-500 text-center text-sm mb-4">
             Hanya tersedia untuk pengajar
           </p>
-          <button 
-            className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors" 
+          <button
+            className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             onClick={() => navigate("/buatkelas")}
-          > 
+          >
             Buat Kelas
           </button>
         </div>

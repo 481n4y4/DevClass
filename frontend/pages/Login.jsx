@@ -304,7 +304,7 @@ export default function Login() {
 
             {/* Register Link */}
             <div className="mt-6 text-center">
-              <p className="text-gray-600">
+              {/* <p className="text-gray-600">
                 Belum punya akun?{" "}
                 <Link
                   to="/register"
@@ -312,7 +312,7 @@ export default function Login() {
                 >
                   Daftar sekarang
                 </Link>
-              </p>
+              </p> */}
               <p className="mt-4 text-sm text-gray-500">
                 Dengan mendaftar, Anda menyetujui{" "}
                 <a href="#" className="text-blue-600 hover:text-blue-800">
