@@ -3,7 +3,7 @@ import api from "../api/axios";
 import { useNavigate, Link } from "react-router-dom";
 import logo from "../assets/img/Logo.png";
 
-export default function Login() {
+export default function LoginGuru() {
   const [nis, setNis] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -23,7 +23,7 @@ export default function Login() {
 
     // Validasi sederhana
     if (!nis || !password) {
-      setError("NIS dan password harus diisi");
+      setError("Email/NIS dan password harus diisi");
       setIsLoading(false);
       return;
     }
@@ -43,26 +43,27 @@ export default function Login() {
         },
       );
 
+      // Response: { user: { id, nis, name, no_absen, kelas, kelas_index, role, created_at }, token }
       const { token } = response.data;
 
       // Simpan token
       localStorage.setItem("token", token);
 
-      // Navigasi ke dashboard siswa
-      navigate("/dashboard-siswa");
+      // Navigasi ke dashboard guru
+      navigate("/dashboard-guru");
     } catch (err) {
       console.error(err);
       const status = err.response?.status;
       if (status === 401) {
-        setError("NIS atau password salah");
+        setError("Email/NIS atau password salah");
         return;
       }
       if (status === 422) {
-        setError("Data tidak valid. Periksa NIS dan password Anda.");
+        setError("Data tidak valid. Periksa Email/NIS dan password Anda.");
         return;
       }
       if (status === 404) {
-        setError("Akun siswa tidak ditemukan");
+        setError("Akun guru/admin tidak ditemukan");
         return;
       }
       setError("Terjadi kesalahan. Silakan coba lagi.");
@@ -72,9 +73,9 @@ export default function Login() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-sky-50 to-emerald-50 flex flex-col">
-      <div className="pointer-events-none absolute -top-16 -left-10 h-40 w-40 rounded-full bg-sky-200/40 blur-2xl" />
-      <div className="pointer-events-none absolute -bottom-24 -right-10 h-48 w-48 rounded-full bg-emerald-200/40 blur-2xl" />
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-indigo-50 to-fuchsia-50 flex flex-col">
+      <div className="pointer-events-none absolute -top-16 -left-10 h-40 w-40 rounded-full bg-indigo-200/40 blur-2xl" />
+      <div className="pointer-events-none absolute -bottom-24 -right-10 h-48 w-48 rounded-full bg-fuchsia-200/40 blur-2xl" />
       {/* Navbar */}
       <nav className="relative z-10 w-full border-b border-white/50 bg-white/70 backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4">
@@ -87,7 +88,7 @@ export default function Login() {
               />
             </span>
             <span className="text-lg font-semibold text-gray-900">
-              Dev<span className="text-blue-600">Class</span>
+              Dev<span className="text-indigo-600">Class</span>
             </span>
           </Link>
           <div className="flex items-center gap-3 text-sm">
@@ -97,7 +98,7 @@ export default function Login() {
             <span className="text-gray-300">|</span>
             <Link
               to="/register"
-              className="text-blue-600 font-semibold hover:text-blue-800"
+              className="text-indigo-600 font-semibold hover:text-indigo-800"
             >
               Daftar
             </Link>
@@ -119,20 +120,23 @@ export default function Login() {
                   />
                 </div>
                 <h1 className="text-3xl font-bold text-gray-900">
-                  Dev<span className="text-blue-600">Class</span>
+                  Dev<span className="text-indigo-600">Class</span>
                 </h1>
               </div>
             </Link>
             <h2 className="text-2xl font-bold text-gray-800">
-              Masuk ke Akun Siswa
+              Masuk ke Akun Guru/Admin
             </h2>
             <p className="text-gray-600 mt-2">
-              Masuk untuk mengakses kelas, tugas, dan materi Anda
+              Masuk untuk mengelola kelas, pengumuman, dan materi
+            </p>
+            <p className="mt-3 text-sm text-indigo-700 font-medium">
+              Demo: teacher@devclass.com / teacher123
             </p>
           </div>
 
           {/* Login Form */}
-          <div className="bg-white rounded-3xl shadow-2xl shadow-sky-200/40 border border-white/60 ring-1 ring-black/5 p-7 sm:p-8">
+          <div className="bg-white rounded-3xl shadow-2xl shadow-indigo-200/40 border border-white/60 ring-1 ring-black/5 p-7 sm:p-8">
             {error && (
               <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-red-600 text-sm font-medium">{error}</p>
@@ -140,13 +144,13 @@ export default function Login() {
             )}
 
             <form onSubmit={handleLogin}>
-              {/* NIS Input */}
+              {/* Email/NIS Input */}
               <div className="mb-5">
                 <label
                   htmlFor="nis"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  NIS
+                  Email/NIS
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -167,24 +171,14 @@ export default function Login() {
                   <input
                     id="nis"
                     type="text"
-                    placeholder="Masukkan NIS"
-                    className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    placeholder="teacher@devclass.com"
+                    className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                     value={nis}
-                    onChange={(e) => {
-                      const nextNis = e.target.value;
-                      setNis(nextNis);
-                      // Password default sama dengan NIS (dokumentasi API)
-                      if (!password) {
-                        setPassword(nextNis);
-                      }
-                    }}
+                    onChange={(e) => setNis(e.target.value)}
                     required
                     disabled={isLoading}
                   />
                 </div>
-                <p className="mt-2 text-xs text-gray-500">
-                  Password default mengikuti NIS Anda.
-                </p>
               </div>
 
               {/* Password Input */}
@@ -198,7 +192,7 @@ export default function Login() {
                   </label>
                   <button
                     type="button"
-                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
                     onClick={() => navigate("/forgot-password")}
                   >
                     Lupa password?
@@ -224,7 +218,7 @@ export default function Login() {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Masukkan password"
-                    className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -280,7 +274,7 @@ export default function Login() {
                 <input
                   id="remember-me"
                   type="checkbox"
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                 />
                 <label
                   htmlFor="remember-me"
@@ -294,10 +288,10 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className={`w-full py-3 px-4 rounded-xl font-medium text-white shadow-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
+                className={`w-full py-3 px-4 rounded-xl font-medium text-white shadow-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 ${
                   isLoading
-                    ? "bg-blue-400 cursor-not-allowed"
-                    : "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 hover:shadow-xl"
+                    ? "bg-indigo-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-indigo-600 to-fuchsia-600 hover:from-indigo-700 hover:to-fuchsia-700 hover:shadow-xl"
                 }`}
               >
                 {isLoading ? (
@@ -343,11 +337,11 @@ export default function Login() {
               </p> */}
               <p className="mt-4 text-sm text-gray-500">
                 Dengan mendaftar, Anda menyetujui{" "}
-                <a href="#" className="text-blue-600 hover:text-blue-800">
+                <a href="#" className="text-indigo-600 hover:text-indigo-800">
                   Syarat & Ketentuan
                 </a>{" "}
                 dan{" "}
-                <a href="#" className="text-blue-600 hover:text-blue-800">
+                <a href="#" className="text-indigo-600 hover:text-indigo-800">
                   Kebijakan Privasi
                 </a>
               </p>

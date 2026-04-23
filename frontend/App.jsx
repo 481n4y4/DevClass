@@ -13,6 +13,7 @@ import Buatkelas from "./pages/Buatkelas";
 import Kerjakan from "./pages/Kerjakan";
 import BuatPengumuman from "./pages/BuatPengumuman";
 import Selengkapnya from "./pages/Selengkapnya";
+import LoginGuru from "./pages/LoginGuru";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -44,7 +45,15 @@ export default function App() {
         </Route>
 
         <Route
-          path="/class/:id"
+          path="/login-guru"
+          element={
+            <ProtectedRoute>
+              < LoginGuru/>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/material/:id"
           element={
             <ProtectedRoute>
               <Materials />
