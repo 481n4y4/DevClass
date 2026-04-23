@@ -7,12 +7,14 @@ import LandingPage from "./pages/Landing";
 import Materials from "./pages/Materials";
 import Profile from "./pages/Profile";
 import Bergabung from "./pages/Bergabung";
-import Buatkelas from "./pages/Buatkelas";
+import BuatMateri from "./pages/BuatMateri";
 import Kerjakan from "./pages/Kerjakan";
 import BuatPengumuman from "./pages/BuatPengumuman";
 import Selengkapnya from "./pages/Selengkapnya";
 import LoginGuru from "./pages/LoginGuru";
 import DashboardTeacher from "./pages/DashboardTeacher";
+import MaterialsTeacher from "./pages/MaterialsTeacher";
+import EditMateri from "./pages/EditMateri";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -27,6 +29,7 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/admin/login" element={<LoginGuru />} />
 
         {/* Main Dashboard */}
         <Route
@@ -47,7 +50,6 @@ export default function App() {
           }
         />
 
-        <Route path="/admin/login" element={<LoginGuru />} />
         <Route
           path="/material/:id"
           element={
@@ -56,6 +58,26 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="admin/material/:id"
+          element={
+            <ProtectedRoute>
+              <MaterialsTeacher />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="admin/material/:id/edit"
+          element={
+            <ProtectedRoute>
+              <EditMateri />
+            </ProtectedRoute>
+          }
+        />
+        
+
         <Route
           path="/bergabung"
           element={
@@ -65,10 +87,10 @@ export default function App() {
           }
         />
         <Route
-          path="/buatkelas"
+          path="/BuatMateri"
           element={
             <ProtectedRoute>
-              <Buatkelas />
+              <BuatMateri />
             </ProtectedRoute>
           }
         />

@@ -1,259 +1,404 @@
-// ClassesPage.jsx
-import React, { useEffect, useMemo, useState } from "react";
+// ClassesPageTeacher.jsx
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPlus,
-  faFilter,
+  faMagnifyingGlass,
+  faRotateRight,
+  faDownload,
+  faArrowUpRightFromSquare,
   faUsers,
   faClock,
   faTasks,
   faComment,
-  faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
-import { defaultClasses } from "../data/defaultClasses";
 import api from "../api/axios";
+import Header from "../components/Header";
 
-const ClassesPage = ({ classes = [], onClassClick }) => {
+const ClassesPageTeacher = () => {
   const navigate = useNavigate();
-  const [fetchedClasses, setFetchedClasses] = useState([]);
+  const [materials, setMaterials] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterKelas, setFilterKelas] = useState("all");
+  const [filterKelasIndex, setFilterKelasIndex] = useState("all");
+
+  // Fetch materials - Teacher gets ALL materials
+  const fetchMaterials = useCallback(async () => {
+    setIsLoading(true);
+    setErrorMessage("");
+
+    try {
+      // API: GET /api/materials
+      // Headers: Accept: application/json, Authorization: Bearer {token}
+      // Teacher gets all materials from all classes
+      const response = await api.get("/materials", {
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      const data = Array.isArray(response.data)
+        ? response.data
+        : response.data?.data || [];
+      setMaterials(data);
+    } catch (error) {
+      console.error("Gagal memuat materials:", error);
+      setErrorMessage("Gagal memuat materials. Silakan coba lagi.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    if (classes.length > 0) {
-      return;
+    fetchMaterials();
+  }, [fetchMaterials]);
+
+  const formatDate = (value) => {
+    if (!value) {
+      return "No deadline";
     }
-
-    const fetchClasses = async () => {
-      setIsLoading(true);
-      setErrorMessage("");
-
-      try {
-        const response = await api.get("/classes");
-        const data = Array.isArray(response.data)
-          ? response.data
-          : response.data?.data || [];
-        setFetchedClasses(data);
-      } catch (error) {
-        console.error("Gagal memuat kelas:", error);
-        setErrorMessage("Gagal memuat kelas. Silakan coba lagi.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchClasses();
-  }, [classes.length]);
-
-  const classList = useMemo(() => {
-    if (classes.length > 0) {
-      return classes;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return "No deadline";
     }
-    if (fetchedClasses.length > 0) {
-      return fetchedClasses;
-    }
-    return defaultClasses;
-  }, [classes, fetchedClasses]);
-
-  const handleClassClick = (classId) => {
-    // Jika ada onClassClick dari props, panggil
-    if (onClassClick) {
-      onClassClick(classId);
-    }
-    // Navigasi ke halaman detail kelas
-    navigate(`/class/${classId}`);
+    return new Intl.DateTimeFormat("id-ID", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(date);
   };
 
-  // Helper untuk mendapatkan jumlah tugas yang belum selesai
-  const getPendingAssignments = (classItem) => {
-    // Cek apakah menggunakan assignmentsDue atau assignmentsList
-    if (classItem.assignmentsDue !== undefined) {
-      return classItem.assignmentsDue;
+  const formatDateShort = (value) => {
+    if (!value) {
+      return "-";
     }
-    if (classItem.assignmentsList) {
-      return classItem.assignmentsList.filter((a) => a.submitted < a.total)
-        .length;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return "-";
     }
-    return 0;
+    return new Intl.DateTimeFormat("id-ID", {
+      dateStyle: "medium",
+    }).format(date);
   };
 
-  // Helper untuk mendapatkan jumlah pengumuman
-  const getAnnouncementCount = (classItem) => {
-    // Cek apakah menggunakan announcements atau announcementsList
-    if (classItem.announcements !== undefined) {
-      return classItem.announcements;
-    }
-    if (classItem.announcementsList) {
-      return classItem.announcementsList.length;
-    }
-    return 0;
-  };
+  // Get unique kelas values for filter
+  const uniqueKelas = useMemo(() => {
+    const kelasSet = new Set(
+      materials.map((m) => m.kelas_target).filter(Boolean),
+    );
+    return ["all", ...Array.from(kelasSet).sort()];
+  }, [materials]);
 
-  // Helper untuk mendapatkan nama pengajar
-  const getTeacherName = (classItem) => {
-    if (classItem.teacher) {
-      return classItem.teacher;
-    }
-    if (classItem.instructor && classItem.instructor.name) {
-      return classItem.instructor.name;
-    }
-    return "Instruktur";
-  };
+  const uniqueKelasIndex = useMemo(() => {
+    const indexSet = new Set(
+      materials.map((m) => m.kelas_index_target).filter(Boolean),
+    );
+    return ["all", ...Array.from(indexSet).sort()];
+  }, [materials]);
 
-  // Helper untuk mendapatkan jumlah siswa
-  const getStudentCount = (classItem) => {
-    if (classItem.students) {
-      return classItem.students;
-    }
-    if (classItem.instructor && classItem.instructor.students) {
-      return classItem.instructor.students;
-    }
-    return 0;
-  };
+  // Filter and sort materials
+  const filteredMaterials = useMemo(() => {
+    const keyword = searchTerm.trim().toLowerCase();
+    const filtered = materials.filter((material) => {
+      // Search filter
+      const matchesKeyword = keyword
+        ? [material.title, material.content, material.created_by?.name]
+            .filter(Boolean)
+            .some((value) => value.toLowerCase().includes(keyword))
+        : true;
 
-  // Helper untuk mendapatkan nama kelas
-  const getClassName = (classItem) => {
-    if (classItem.name) {
-      return classItem.name;
-    }
-    if (classItem.title) {
-      return classItem.title;
-    }
-    return "Kelas";
-  };
+      // Kelas filter
+      const matchesKelas =
+        filterKelas === "all" || material.kelas_target === filterKelas;
+
+      // Kelas index filter
+      const matchesKelasIndex =
+        filterKelasIndex === "all" ||
+        material.kelas_index_target === filterKelasIndex;
+
+      return matchesKeyword && matchesKelas && matchesKelasIndex;
+    });
+
+    // Sort by created_at (newest first)
+    const sorted = [...filtered].sort((a, b) => {
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
+
+    return sorted;
+  }, [materials, searchTerm, filterKelas, filterKelasIndex]);
+
+  const renderSkeletons = () =>
+    Array.from({ length: 6 }).map((_, index) => (
+      <div
+        key={`skeleton-${index}`}
+        className="animate-pulse rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
+      >
+        <div className="h-3 w-16 rounded-full bg-gray-200 mb-4" />
+        <div className="h-5 w-3/4 rounded bg-gray-200 mb-2" />
+        <div className="h-4 w-full rounded bg-gray-100 mb-3" />
+        <div className="h-4 w-2/3 rounded bg-gray-100 mb-6" />
+        <div className="h-10 w-full rounded-xl bg-gray-100" />
+      </div>
+    ));
 
   return (
-    <div className="p-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4 sm:mb-0">
-          Kelas Anda
-        </h2>
-        <div className="flex space-x-3">
+    <div className="min-h-screen bg-gray-50">
+      <Header toggleSidebar={() => {}} isSidebarOpen={false} />
+      <div className="p-6 pt-20">
+        {/* Header with Create Class Button */}
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">
+              Kelola Materials
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Kelola semua materi pembelajaran (Teacher View)
+            </p>
+          </div>
+
+          {/* Tombol Buat Kelas Baru */}
           <button
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            onClick={() => navigate("/bergabung")}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+            onClick={() => navigate("/BuatMateri")}
           >
-            <FontAwesomeIcon icon={faPlus} className="mr-2" />
-            Bergabung dengan Kelas
-          </button>
-          <button className="flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-            <FontAwesomeIcon icon={faFilter} className="mr-2" />
-            Filter
+            <FontAwesomeIcon icon={faPlus} />
+            Buat Kelas Baru
           </button>
         </div>
-      </div>
 
-      {errorMessage && (
-        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-          <p className="text-sm font-medium text-red-600">{errorMessage}</p>
+        {/* Search and Filters */}
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-6">
+          <div className="relative flex-1 max-w-md">
+            <FontAwesomeIcon
+              icon={faMagnifyingGlass}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            />
+            <input
+              type="text"
+              placeholder="Cari materi (judul, konten, guru)..."
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              className="w-full rounded-xl border border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <select
+              value={filterKelas}
+              onChange={(event) => setFilterKelas(event.target.value)}
+              className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            >
+              <option value="all">Semua Kelas</option>
+              {uniqueKelas
+                .filter((k) => k !== "all")
+                .map((kelas) => (
+                  <option key={kelas} value={kelas}>
+                    Kelas {kelas}
+                  </option>
+                ))}
+            </select>
+
+            <select
+              value={filterKelasIndex}
+              onChange={(event) => setFilterKelasIndex(event.target.value)}
+              className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            >
+              <option value="all">Semua Index</option>
+              {uniqueKelasIndex
+                .filter((i) => i !== "all")
+                .map((index) => (
+                  <option key={index} value={index}>
+                    Index {index}
+                  </option>
+                ))}
+            </select>
+          </div>
         </div>
-      )}
 
-      {isLoading && (
-        <div className="mb-6 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3">
-          <p className="text-sm font-medium text-blue-600">Memuat kelas...</p>
-        </div>
-      )}
+        {/* Error Message */}
+        {errorMessage && (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 flex items-center justify-between">
+            <p className="text-sm font-medium text-red-600">{errorMessage}</p>
+            <button
+              onClick={fetchMaterials}
+              className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700"
+            >
+              <FontAwesomeIcon icon={faRotateRight} />
+              Coba lagi
+            </button>
+          </div>
+        )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {classList.map((classItem) => (
-          <div
-            key={classItem.id}
-            className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer"
-            onClick={() => handleClassClick(classItem.id)}
-          >
-            <div className={`h-3 ${classItem.color}`}></div>
-            <div className="p-5">
-              <div className="flex justify-between items-start mb-3">
-                <h3 className="text-lg font-bold text-gray-800">
-                  {getClassName(classItem)}
-                </h3>
-                <span className="text-sm font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                  {classItem.code}
-                </span>
-              </div>
-              <p className="text-gray-600 mb-4">{getTeacherName(classItem)}</p>
-
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center text-sm text-gray-500">
-                  <FontAwesomeIcon icon={faUsers} className="mr-2" />
-                  {getStudentCount(classItem)} siswa
-                </div>
-                <div className="flex items-center text-sm text-gray-500">
-                  <FontAwesomeIcon icon={faClock} className="mr-2" />
-                  {classItem.schedule}
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-600">Progress</span>
-                  <span className="font-medium">{classItem.progress}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className={`h-2 rounded-full ${
-                      classItem.progress === 100
-                        ? "bg-green-500"
-                        : classItem.progress > 50
-                          ? "bg-blue-500"
-                          : "bg-yellow-500"
-                    }`}
-                    style={{ width: `${classItem.progress}%` }}
-                  ></div>
-                </div>
-              </div>
-
-              <div className="flex justify-between pt-4 border-t border-gray-100">
-                <div className="flex space-x-4">
-                  {getPendingAssignments(classItem) > 0 && (
-                    <div className="flex items-center text-red-600">
-                      <FontAwesomeIcon icon={faTasks} className="mr-1" />
-                      <span className="text-sm font-medium">
-                        {getPendingAssignments(classItem)} Tugas
-                      </span>
-                    </div>
-                  )}
-                  {getAnnouncementCount(classItem) > 0 && (
-                    <div className="flex items-center text-blue-600">
-                      <FontAwesomeIcon icon={faComment} className="mr-1" />
-                      <span className="text-sm font-medium">
-                        {getAnnouncementCount(classItem)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <button className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
-                  Buka
-                  <FontAwesomeIcon
-                    icon={faChevronRight}
-                    className="ml-1 text-xs"
-                  />
-                </button>
-              </div>
+        {/* Stats Summary */}
+        {!isLoading && materials.length > 0 && (
+          <div className="mb-6 flex flex-wrap gap-4">
+            <div className="bg-white rounded-xl border border-gray-200 px-4 py-2">
+              <span className="text-sm text-gray-500">Total Materials:</span>
+              <span className="ml-2 font-bold text-gray-800">
+                {materials.length}
+              </span>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 px-4 py-2">
+              <span className="text-sm text-gray-500">Ditampilkan:</span>
+              <span className="ml-2 font-bold text-gray-800">
+                {filteredMaterials.length}
+              </span>
             </div>
           </div>
-        ))}
+        )}
 
-        {/* Card tambah kelas baru */}
-        <div className="bg-white rounded-xl shadow-sm border-2 border-dashed border-gray-300 hover:border-blue-400 transition-colors flex flex-col items-center justify-center p-10 cursor-pointer">
-          <h3 className="text-lg font-medium text-gray-700 mb-2">
-            Buat Kelas Baru
-          </h3>
-          <p className="text-gray-500 text-center text-sm mb-4">
-            Hanya tersedia untuk pengajar
-          </p>
-          <button
-            className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-            onClick={() => navigate("/buatkelas")}
-          >
-            Buat Kelas
-          </button>
-        </div>
+        {/* Loading State */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {renderSkeletons()}
+          </div>
+        ) : filteredMaterials.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center">
+            <p className="text-lg font-semibold text-gray-700">
+              Tidak ada materials ditemukan
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              Coba ubah pencarian atau filter Anda.
+            </p>
+            <button
+              onClick={fetchMaterials}
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              <FontAwesomeIcon icon={faRotateRight} />
+              Refresh
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {filteredMaterials.map((material) => {
+              const submissionRequired = Boolean(material.submission_required);
+              const kelasTarget = material.kelas_target ?? "-";
+              const kelasIndexTarget = material.kelas_index_target ?? "-";
+              const teacherName =
+                material.created_by?.name || "Unknown Teacher";
+
+              return (
+                <div
+                  key={material.id}
+                  className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition hover:shadow-md"
+                >
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+                        Kelas {kelasTarget} - Index {kelasIndexTarget}
+                      </p>
+                      <h3 className="mt-1 text-lg font-bold text-gray-800 line-clamp-2">
+                        {material.title}
+                      </h3>
+                    </div>
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap ${
+                        submissionRequired
+                          ? "bg-amber-100 text-amber-700"
+                          : "bg-emerald-100 text-emerald-700"
+                      }`}
+                    >
+                      {submissionRequired
+                        ? "Submission Required"
+                        : "No Submission"}
+                    </span>
+                  </div>
+
+                  {/* Teacher Info */}
+                  <div className="flex items-center gap-2 mb-3 text-sm text-gray-500">
+                    <FontAwesomeIcon icon={faUsers} className="text-xs" />
+                    <span>{teacherName}</span>
+                  </div>
+
+                  {/* Content Preview */}
+                  {material.content && (
+                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                      {material.content}
+                    </p>
+                  )}
+
+                  {/* Meta Info */}
+                  <div className="mt-4 space-y-2 text-sm text-gray-600 border-t border-gray-100 pt-3">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1">
+                        <FontAwesomeIcon icon={faClock} className="text-xs" />
+                        Deadline
+                      </span>
+                      <span className="font-medium text-gray-800">
+                        {formatDate(material.deadline)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Dibuat</span>
+                      <span className="font-medium text-gray-800">
+                        {formatDateShort(material.created_at)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="mt-4 flex items-center justify-between">
+                    {material.file_path ? (
+                      <a
+                        href={material.file_path}
+                        className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+                      >
+                        <FontAwesomeIcon icon={faDownload} />
+                        Download File
+                      </a>
+                    ) : (
+                      <span className="text-xs text-gray-400">
+                        Tidak ada file
+                      </span>
+                    )}
+
+                    <div className="flex gap-2">
+                      {/* Edit Button */}
+                      <button
+                        onClick={() =>
+                          navigate(`/admin/material/${material.id}/edit`)
+                        }
+                        className="inline-flex items-center gap-1 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+                      >
+                        Edit
+                      </button>
+                      {/* View Submissions Button - khusus untuk material dengan submission_required */}
+                      {submissionRequired && (
+                        <button
+                          onClick={() =>
+                            navigate(
+                              `/admin/material/${material.id}/submissions`,
+                            )
+                          }
+                          className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                        >
+                          <FontAwesomeIcon icon={faTasks} />
+                          Submissions
+                        </button>
+                      )}
+                      {/* View Details Button */}
+                      <button
+                        onClick={() =>
+                          navigate(`/admin/material/${material.id}`)
+                        }
+                        className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                      >
+                        <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
+                        Detail
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-export default ClassesPage;
+export default ClassesPageTeacher;

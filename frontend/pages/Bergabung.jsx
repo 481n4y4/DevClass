@@ -1,6 +1,5 @@
 // App.jsx
 import React, { useState } from "react";
-import { getClassById } from "../data/defaultClasses";
 import HeaderBack from "../components/HeaderBack";
 import api from "../api/axios";
 
@@ -152,52 +151,51 @@ export default function Bergabung() {
           {/* Form Card */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
             <div className="p-8">
-                <form onSubmit={handleJoinClass}>
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      <i className="fa-regular fa-key mr-2 text-blue-600"></i>
-                      Masukkan Kode Kelas
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={classCode}
-                        onChange={(e) =>
-                          setClassCode(e.target.value.toUpperCase())
-                        }
-                        placeholder="Contoh: ASL-2024-01"
-                        className="w-full px-4 py-3 pl-12 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                        required
-                      />
-                      <i className="fa-regular fa-hashtag absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                    </div>
-                    <p className="text-xs text-slate-400 mt-2">
-                      <i className="fa-regular fa-circle-info mr-1"></i>
-                      Kode kelas biasanya terdiri dari 3 huruf diikuti angka
-                      (contoh: ASL-2024-01)
-                    </p>
+              <form onSubmit={handleJoinClass}>
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <i className="fa-regular fa-key mr-2 text-blue-600"></i>
+                    Masukkan Kode Kelas
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={classCode}
+                      onChange={(e) =>
+                        setClassCode(e.target.value.toUpperCase())
+                      }
+                      placeholder="Contoh: ASL-2024-01"
+                      className="w-full px-4 py-3 pl-12 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      required
+                    />
+                    <i className="fa-regular fa-hashtag absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                   </div>
+                  <p className="text-xs text-slate-400 mt-2">
+                    <i className="fa-regular fa-circle-info mr-1"></i>
+                    Kode kelas biasanya terdiri dari 3 huruf diikuti angka
+                    (contoh: ASL-2024-01)
+                  </p>
+                </div>
 
-                  <div className="flex gap-3">
-                    <button
-                      type="submit"
-                      disabled={isLoading}
-                      className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all font-medium flex items-center justify-center gap-2 disabled:bg-blue-400 disabled:from-blue-400 disabled:to-indigo-400 disabled:cursor-not-allowed"
-                    >
-                      <i className="fa-regular fa-arrow-right-to-bracket"></i>
-                      {isLoading
-                        ? "Sedang Bergabung..."
-                        : "Bergabung dengan Kelas"}
-                    </button>
-                    <button
-                      type="button"
-                      className="px-4 py-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors text-slate-600"
-                    >
-                      <i className="fa-regular fa-qrcode"></i>
-                    </button>
-                  </div>
-                </form>
-              
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all font-medium flex items-center justify-center gap-2 disabled:bg-blue-400 disabled:from-blue-400 disabled:to-indigo-400 disabled:cursor-not-allowed"
+                  >
+                    <i className="fa-regular fa-arrow-right-to-bracket"></i>
+                    {isLoading
+                      ? "Sedang Bergabung..."
+                      : "Bergabung dengan Kelas"}
+                  </button>
+                  <button
+                    type="button"
+                    className="px-4 py-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors text-slate-600"
+                  >
+                    <i className="fa-regular fa-qrcode"></i>
+                  </button>
+                </div>
+              </form>
             </div>
 
             {/* Divider */}
