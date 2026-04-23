@@ -4,16 +4,15 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import LandingPage from "./pages/Landing";
 // import Class from "./pages/Class";
-import ClassesPage from "./pages/ClassesPage";
-import AssignmentsPage from "./pages/AssignmentsPage";
-import AnnouncementsPage from "./pages/AnnouncementsPage";
 import Materials from "./pages/Materials";
+import Profile from "./pages/Profile";
 import Bergabung from "./pages/Bergabung";
 import Buatkelas from "./pages/Buatkelas";
 import Kerjakan from "./pages/Kerjakan";
 import BuatPengumuman from "./pages/BuatPengumuman";
 import Selengkapnya from "./pages/Selengkapnya";
 import LoginGuru from "./pages/LoginGuru";
+import DashboardTeacher from "./pages/DashboardTeacher";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -29,7 +28,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* Main Dashboard Layout */}
+        {/* Main Dashboard */}
         <Route
           path="/dashboard"
           element={
@@ -37,21 +36,18 @@ export default function App() {
               <Dashboard />
             </ProtectedRoute>
           }
-        >
-          <Route index element={<ClassesPage />} />
-          <Route path="classes" element={<ClassesPage />} />
-          <Route path="assignments" element={<AssignmentsPage />} />
-          <Route path="announcements" element={<AnnouncementsPage />} />
-        </Route>
+        />
 
         <Route
-          path="/login-guru"
+          path="/admin/dashboard"
           element={
             <ProtectedRoute>
-              < LoginGuru/>
+              <DashboardTeacher />
             </ProtectedRoute>
           }
         />
+
+        <Route path="/admin/login" element={<LoginGuru />} />
         <Route
           path="/material/:id"
           element={
@@ -97,6 +93,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Selengkapnya />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
             </ProtectedRoute>
           }
         />

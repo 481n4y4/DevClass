@@ -50,7 +50,7 @@ export default function LoginGuru() {
       localStorage.setItem("token", token);
 
       // Navigasi ke dashboard guru
-      navigate("/dashboard-guru");
+      navigate("/admin/dashboard");
     } catch (err) {
       console.error(err);
       const status = err.response?.status;

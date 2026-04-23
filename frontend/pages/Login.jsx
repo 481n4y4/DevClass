@@ -49,7 +49,7 @@ export default function Login() {
       localStorage.setItem("token", token);
 
       // Navigasi ke dashboard siswa
-      navigate("/dashboard-siswa");
+      navigate("/dashboard");
     } catch (err) {
       console.error(err);
       const status = err.response?.status;
