@@ -5,6 +5,8 @@ import api from "../api/axios";
 export default function Buatkelas() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [grade, setGrade] = useState("");
+  const [nameClass, setNameClass] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -14,8 +16,8 @@ export default function Buatkelas() {
     setErrorMessage("");
     setShowSuccess(false);
 
-    if (!name || !description) {
-      setErrorMessage("Nama kelas dan deskripsi harus diisi");
+    if (!name || !description || !grade || !nameClass) {
+      setErrorMessage("Semua kolom harus diisi");
       return;
     }
 
@@ -25,11 +27,15 @@ export default function Buatkelas() {
       await api.post("/classes", {
         name,
         description,
+        grade,
+        name_class: nameClass,
       });
 
       setShowSuccess(true);
       setName("");
       setDescription("");
+      setGrade("");
+      setNameClass("");
     } catch (error) {
       console.error("Gagal membuat kelas:", error);
       setErrorMessage("Terjadi kesalahan saat membuat kelas");
@@ -99,6 +105,34 @@ export default function Buatkelas() {
                 rows="4"
                 placeholder="Contoh: Kelas Laravel advanced"
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tingkat Kelas (Grade)
+              </label>
+              <input
+                type="text"
+                value={grade}
+                onChange={(e) => setGrade(e.target.value)}
+                placeholder="Contoh: 12"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nama Kelas (Name Class)
+              </label>
+              <input
+                type="text"
+                value={nameClass}
+                onChange={(e) => setNameClass(e.target.value)}
+                placeholder="Contoh: XII SIJA 2"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 required
               />
             </div>

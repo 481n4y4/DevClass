@@ -2,12 +2,15 @@
 import React, { useState } from "react";
 import { getClassById } from "../data/defaultClasses";
 import HeaderBack from "../components/HeaderBack";
+import api from "../api/axios";
 
 export default function Bergabung() {
   const [joinMethod, setJoinMethod] = useState("code");
   const [classCode, setClassCode] = useState("");
   const [inviteLink, setInviteLink] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const popularClasses = [
     {
@@ -36,10 +39,41 @@ export default function Bergabung() {
     },
   ];
 
-  const handleJoinClass = (e) => {
+  const handleJoinClass = async (e) => {
     e.preventDefault();
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 3000);
+    setErrorMessage("");
+    setShowSuccess(false);
+
+    if (joinMethod === "code" && !classCode) {
+      setErrorMessage("Kode kelas harus diisi");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      if (joinMethod === "code") {
+        await api.post("/enroll", {
+          class_code: classCode,
+        });
+        setShowSuccess(true);
+        setClassCode("");
+        setTimeout(() => setShowSuccess(false), 3000);
+      } else {
+        // Implementasi untuk link invite belum ada, kita tampilkan saja success
+        setShowSuccess(true);
+        setInviteLink("");
+        setTimeout(() => setShowSuccess(false), 3000);
+      }
+    } catch (error) {
+      console.error("Gagal bergabung kelas:", error);
+      setErrorMessage(
+        error.response?.data?.message ||
+          "Terjadi kesalahan saat bergabung. Pastikan kode kelas benar.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -80,7 +114,7 @@ export default function Bergabung() {
                   Berhasil Bergabung!
                 </p>
                 <p className="text-green-600 text-sm">
-                  Anda sekarang terdaftar di kelas Administrasi Server Linux
+                  Anda sekarang terdaftar di kelas.
                 </p>
               </div>
               <button
@@ -93,38 +127,31 @@ export default function Bergabung() {
           </div>
         )}
 
+        {/* Error Alert */}
+        {errorMessage && (
+          <div className="max-w-md mx-auto mb-6 animate-slideDown">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                <i className="fa-regular fa-circle-xmark text-red-600"></i>
+              </div>
+              <div className="flex-1">
+                <p className="text-red-800 font-medium">{errorMessage}</p>
+              </div>
+              <button
+                onClick={() => setErrorMessage("")}
+                className="text-red-600 hover:text-red-800"
+              >
+                <i className="fa-regular fa-xmark"></i>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Join Form */}
         <div className="max-w-3xl mx-auto">
-          {/* Method Toggle */}
-          <div className="bg-white rounded-xl p-2 inline-flex mb-6 border border-slate-200">
-            <button
-              onClick={() => setJoinMethod("code")}
-              className={`px-6 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-                joinMethod === "code"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              <i className="fa-regular fa-key"></i>
-              Kode Kelas
-            </button>
-            <button
-              onClick={() => setJoinMethod("link")}
-              className={`px-6 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-                joinMethod === "link"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              <i className="fa-regular fa-link"></i>
-              Link Undangan
-            </button>
-          </div>
-
           {/* Form Card */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
             <div className="p-8">
-              {joinMethod === "code" ? (
                 <form onSubmit={handleJoinClass}>
                   <div className="mb-6">
                     <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -154,10 +181,13 @@ export default function Bergabung() {
                   <div className="flex gap-3">
                     <button
                       type="submit"
-                      className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all font-medium flex items-center justify-center gap-2"
+                      disabled={isLoading}
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all font-medium flex items-center justify-center gap-2 disabled:bg-blue-400 disabled:from-blue-400 disabled:to-indigo-400 disabled:cursor-not-allowed"
                     >
                       <i className="fa-regular fa-arrow-right-to-bracket"></i>
-                      Bergabung dengan Kelas
+                      {isLoading
+                        ? "Sedang Bergabung..."
+                        : "Bergabung dengan Kelas"}
                     </button>
                     <button
                       type="button"
@@ -167,39 +197,7 @@ export default function Bergabung() {
                     </button>
                   </div>
                 </form>
-              ) : (
-                <form onSubmit={handleJoinClass}>
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      <i className="fa-regular fa-link mr-2 text-blue-600"></i>
-                      Masukkan Link Undangan
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="url"
-                        value={inviteLink}
-                        onChange={(e) => setInviteLink(e.target.value)}
-                        placeholder="https://devclass.id/join/abc123"
-                        className="w-full px-4 py-3 pl-12 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                        required
-                      />
-                      <i className="fa-regular fa-link absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                    </div>
-                    <p className="text-xs text-slate-400 mt-2">
-                      <i className="fa-regular fa-circle-info mr-1"></i>
-                      Tempel link undangan yang Anda terima dari instruktur
-                    </p>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all font-medium flex items-center justify-center gap-2"
-                  >
-                    <i className="fa-regular fa-arrow-right-to-bracket"></i>
-                    Bergabung dengan Kelas
-                  </button>
-                </form>
-              )}
+              
             </div>
 
             {/* Divider */}

@@ -92,21 +92,11 @@ const ClassesPage = ({ classes = [], onClassClick }) => {
 
   // Helper untuk mendapatkan nama pengajar
   const getTeacherName = (classItem) => {
-    if (
-      classItem.teacher &&
-      typeof classItem.teacher === "object" &&
-      classItem.teacher.name
-    ) {
-      return classItem.teacher.name;
-    }
-    if (classItem.teacher && typeof classItem.teacher === "string") {
+    if (classItem.teacher) {
       return classItem.teacher;
     }
     if (classItem.instructor && classItem.instructor.name) {
       return classItem.instructor.name;
-    }
-    if (classItem.instructor && typeof classItem.instructor === "string") {
-      return classItem.instructor;
     }
     return "Instruktur";
   };
@@ -176,27 +166,14 @@ const ClassesPage = ({ classes = [], onClassClick }) => {
             <div className={`h-3 ${classItem.color}`}></div>
             <div className="p-5">
               <div className="flex justify-between items-start mb-3">
-                <div>
-                  <h3 className="text-lg font-bold text-gray-800">
-                    {getClassName(classItem)}
-                  </h3>
-                  {classItem.grade && classItem.name_class && (
-                    <p className="text-sm font-medium text-blue-600 mt-1">
-                      Kelas {classItem.grade} - {classItem.name_class}
-                    </p>
-                  )}
-                </div>
+                <h3 className="text-lg font-bold text-gray-800">
+                  {getClassName(classItem)}
+                </h3>
                 <span className="text-sm font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
                   {classItem.code}
                 </span>
               </div>
-              <p className="text-gray-600 mb-2">{getTeacherName(classItem)}</p>
-
-              {classItem.description && (
-                <p className="text-sm text-gray-500 mb-4 line-clamp-2">
-                  {classItem.description}
-                </p>
-              )}
+              <p className="text-gray-600 mb-4">{getTeacherName(classItem)}</p>
 
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center text-sm text-gray-500">
@@ -258,6 +235,22 @@ const ClassesPage = ({ classes = [], onClassClick }) => {
             </div>
           </div>
         ))}
+
+        {/* Card tambah kelas baru */}
+        <div className="bg-white rounded-xl shadow-sm border-2 border-dashed border-gray-300 hover:border-blue-400 transition-colors flex flex-col items-center justify-center p-10 cursor-pointer">
+          <h3 className="text-lg font-medium text-gray-700 mb-2">
+            Buat Kelas Baru
+          </h3>
+          <p className="text-gray-500 text-center text-sm mb-4">
+            Hanya tersedia untuk pengajar
+          </p>
+          <button
+            className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            onClick={() => navigate("/buatkelas")}
+          >
+            Buat Kelas
+          </button>
+        </div>
       </div>
     </div>
   );
