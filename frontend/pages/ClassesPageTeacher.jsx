@@ -10,7 +10,9 @@ import {
   faUsers,
   faClock,
   faTasks,
-  faComment,
+  faTrash,
+  faEdit,
+  faEye,
 } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
@@ -24,6 +26,11 @@ const ClassesPageTeacher = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterKelas, setFilterKelas] = useState("all");
   const [filterKelasIndex, setFilterKelasIndex] = useState("all");
+
+  // State untuk delete modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [materialToDelete, setMaterialToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch materials - Teacher gets ALL materials
   const fetchMaterials = useCallback(async () => {
@@ -55,6 +62,58 @@ const ClassesPageTeacher = () => {
   useEffect(() => {
     fetchMaterials();
   }, [fetchMaterials]);
+
+  // Fungsi hapus materi
+  const handleDeleteClick = (material) => {
+    setMaterialToDelete(material);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!materialToDelete) return;
+
+    setIsDeleting(true);
+
+    try {
+      // API: DELETE /api/materials/{id}
+      // Headers: Accept: application/json, Authorization: Bearer {token}
+      const response = await api.delete(`/materials/${materialToDelete.id}`, {
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      // Jika sukses, refresh daftar materials
+      await fetchMaterials();
+
+      // Tutup modal
+      setShowDeleteModal(false);
+      setMaterialToDelete(null);
+
+      // Tampilkan notifikasi sukses (opsional)
+      alert("Materi berhasil dihapus!");
+    } catch (error) {
+      console.error("Gagal menghapus materi:", error);
+
+      // Handle error
+      if (error.response?.data?.message) {
+        setErrorMessage(error.response.data.message);
+      } else {
+        setErrorMessage("Gagal menghapus materi. Silakan coba lagi.");
+      }
+
+      // Tetap tutup modal
+      setShowDeleteModal(false);
+      setMaterialToDelete(null);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setMaterialToDelete(null);
+  };
 
   const formatDate = (value) => {
     if (!value) {
@@ -158,13 +217,13 @@ const ClassesPageTeacher = () => {
             </p>
           </div>
 
-          {/* Tombol Buat Kelas Baru */}
+          {/* Tombol Buat Materi Baru */}
           <button
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
             onClick={() => navigate("/BuatMateri")}
           >
             <FontAwesomeIcon icon={faPlus} />
-            Buat Kelas Baru
+            Buat Materi Baru
           </button>
         </div>
 
@@ -347,7 +406,7 @@ const ClassesPageTeacher = () => {
                         className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
                       >
                         <FontAwesomeIcon icon={faDownload} />
-                        Download File
+                        Download
                       </a>
                     ) : (
                       <span className="text-xs text-gray-400">
@@ -356,16 +415,38 @@ const ClassesPageTeacher = () => {
                     )}
 
                     <div className="flex gap-2">
+                      {/* Detail Button */}
+                      <button
+                        onClick={() =>
+                          navigate(`/admin/material/${material.id}`)
+                        }
+                        className="inline-flex items-center gap-1 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+                        title="Lihat Detail"
+                      >
+                        <FontAwesomeIcon icon={faEye} />
+                      </button>
+
                       {/* Edit Button */}
                       <button
                         onClick={() =>
                           navigate(`/admin/material/${material.id}/edit`)
                         }
-                        className="inline-flex items-center gap-1 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+                        className="inline-flex items-center gap-1 rounded-lg bg-blue-100 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-200"
+                        title="Edit Materi"
                       >
-                        Edit
+                        <FontAwesomeIcon icon={faEdit} />
                       </button>
-                      {/* View Submissions Button - khusus untuk material dengan submission_required */}
+
+                      {/* Delete Button */}
+                      <button
+                        onClick={() => handleDeleteClick(material)}
+                        className="inline-flex items-center gap-1 rounded-lg bg-red-100 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-200"
+                        title="Hapus Materi"
+                      >
+                        <FontAwesomeIcon icon={faTrash} />
+                      </button>
+
+                      {/* Submissions Button (khusus submission_required) */}
                       {submissionRequired && (
                         <button
                           onClick={() =>
@@ -373,22 +454,12 @@ const ClassesPageTeacher = () => {
                               `/admin/material/${material.id}/submissions`,
                             )
                           }
-                          className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-100 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-200"
+                          title="Lihat Submission"
                         >
                           <FontAwesomeIcon icon={faTasks} />
-                          Submissions
                         </button>
                       )}
-                      {/* View Details Button */}
-                      <button
-                        onClick={() =>
-                          navigate(`/admin/material/${material.id}`)
-                        }
-                        className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                      >
-                        <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
-                        Detail
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -397,6 +468,65 @@ const ClassesPageTeacher = () => {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && materialToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <FontAwesomeIcon
+                  icon={faTrash}
+                  className="text-red-600 text-xl"
+                />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Hapus Materi?
+              </h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Apakah Anda yakin ingin menghapus materi{" "}
+                <span className="font-bold text-gray-700">
+                  "{materialToDelete.title}"
+                </span>
+                ?
+              </p>
+              <p className="text-xs text-red-500 mb-6">
+                ⚠️ Tindakan ini tidak dapat dibatalkan. Semua data terkait
+                materi ini akan dihapus.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCancelDelete}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleConfirmDelete}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isDeleting ? (
+                    <>
+                      <FontAwesomeIcon
+                        icon={faRotateRight}
+                        className="animate-spin"
+                      />
+                      Menghapus...
+                    </>
+                  ) : (
+                    <>
+                      <FontAwesomeIcon icon={faTrash} />
+                      Hapus
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

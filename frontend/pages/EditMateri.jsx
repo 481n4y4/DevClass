@@ -9,7 +9,9 @@ import {
   faFilePdf,
   faFileWord,
   faFilePowerpoint,
+  faFileAlt,
   faRotateRight,
+  faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import HeaderBack from "../components/HeaderBack";
 import api from "../api/axios";
@@ -46,6 +48,7 @@ export default function EditMateri() {
   const [errorMessage, setErrorMessage] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
   const [dropActive, setDropActive] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Options for selects
   const kelasOptions = ["10", "11", "12", "13"];
@@ -101,6 +104,73 @@ export default function EditMateri() {
       dateStyle: "medium",
       timeStyle: "short",
     }).format(date);
+  };
+
+  const getFileIcon = (filePath) => {
+    if (!filePath) return faFileAlt;
+    const extension = filePath.split(".").pop()?.toLowerCase();
+    if (extension === "pdf") return faFilePdf;
+    if (["doc", "docx"].includes(extension)) return faFileWord;
+    if (["ppt", "pptx"].includes(extension)) return faFilePowerpoint;
+    return faFileAlt;
+  };
+
+  const getFileIconColor = (filePath) => {
+    if (!filePath) return "text-gray-500";
+    const extension = filePath.split(".").pop()?.toLowerCase();
+    if (extension === "pdf") return "text-red-500";
+    if (["doc", "docx"].includes(extension)) return "text-blue-500";
+    if (["ppt", "pptx"].includes(extension)) return "text-orange-500";
+    return "text-gray-500";
+  };
+
+  const getFileName = (filePath) => {
+    if (!filePath) return "";
+    return filePath.split("/").pop();
+  };
+
+  // Download file menggunakan API endpoint
+  const handleDownload = async (filePath) => {
+    if (!filePath) {
+      setErrorMessage("File tidak tersedia");
+      return;
+    }
+
+    setIsDownloading(true);
+    setErrorMessage("");
+
+    try {
+      const response = await api.get(`/download/${encodeURIComponent(filePath)}`, {
+        responseType: 'blob',
+      });
+      
+      if (response.status !== 200) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = getFileName(filePath);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+    } catch (error) {
+      console.error("Download error:", error);
+      if (error.response?.status === 403) {
+        setErrorMessage("Akses ditolak. Silakan login kembali.");
+      } else if (error.response?.status === 404) {
+        setErrorMessage("File tidak ditemukan di server.");
+      } else {
+        setErrorMessage(`Gagal mengunduh file: ${error.message}`);
+      }
+    } finally {
+      setIsDownloading(false);
+      setTimeout(() => setErrorMessage(""), 5000);
+    }
   };
 
   const validateFile = (file) => {
@@ -175,7 +245,7 @@ export default function EditMateri() {
     setShowSuccess(false);
 
     // Validasi required fields
-    if (!title) {
+    if (!title.trim()) {
       setErrorMessage("Judul materi harus diisi");
       return;
     }
@@ -185,38 +255,51 @@ export default function EditMateri() {
     try {
       // Prepare FormData untuk multipart/form-data
       const formData = new FormData();
-      formData.append("title", title);
-      if (content) formData.append("content", content);
+      formData.append("title", title.trim());
+      if (content && content.trim()) formData.append("content", content.trim());
       formData.append("kelas_target", kelasTarget);
       formData.append("kelas_index_target", kelasIndexTarget);
-      if (deadline) formData.append("deadline", deadline);
-      formData.append("submission_required", submissionRequired ? "1" : "0");
       
-      // Handle file: jika upload file baru atau hapus file existing
-      if (newFile) {
-        formData.append("file", newFile);
-      } else if (isDeleteFile) {
-        // Kirim field file kosong untuk menghapus file
-        formData.append("file", "");
+      // Format deadline jika ada
+      if (deadline) {
+        const deadlineFormatted = deadline.replace("T", " ") + ":00";
+        formData.append("deadline", deadlineFormatted);
       }
       
-      // Note: Untuk PUT request dengan FormData, Laravel requires _method=PUT
+      formData.append("submission_required", submissionRequired ? "1" : "0");
+      
+      // Handle file: jika upload file baru
+      if (newFile) {
+        formData.append("file", newFile);
+      }
+      
+      // Jika ingin menghapus file, kirim parameter khusus
+      // Catatan: Untuk menghapus file, cukup tidak kirim field file
+      // Tapi API mungkin butuh isDeleteFile flag
+      if (isDeleteFile && !newFile) {
+        formData.append("delete_file", "1");
+      }
+      
+      // Untuk PUT request dengan FormData, Laravel requires _method=PUT
       formData.append("_method", "PUT");
 
       // API: PUT /api/materials/{id}
-      await api.post(`/materials/${id}`, formData, {
+      // Menggunakan POST karena browser tidak support PUT dengan FormData
+      const response = await api.post(`/materials/${id}`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Accept: "application/json",
         },
       });
 
-      setShowSuccess(true);
-      
-      // Redirect after 2 seconds ke halaman detail materi (teacher view)
-      setTimeout(() => {
-        navigate(`/admin/material/${id}`);
-      }, 2000);
+      if (response.status === 200 || response.status === 201) {
+        setShowSuccess(true);
+        
+        // Redirect after 2 seconds ke halaman detail materi (teacher view)
+        setTimeout(() => {
+          navigate(`/admin/material/${id}`);
+        }, 2000);
+      }
       
     } catch (error) {
       console.error("Gagal update materi:", error);
@@ -228,6 +311,8 @@ export default function EditMateri() {
         setErrorMessage(firstError || "Terjadi kesalahan validasi");
       } else if (error.response?.data?.message) {
         setErrorMessage(error.response.data.message);
+      } else if (error.code === 'ERR_NETWORK') {
+        setErrorMessage("Gagal terhubung ke server. Periksa koneksi Anda.");
       } else {
         setErrorMessage("Terjadi kesalahan saat update materi");
       }
@@ -293,7 +378,7 @@ export default function EditMateri() {
 
         {/* Success Message */}
         {showSuccess && (
-          <div className="mb-6">
+          <div className="mb-6 animate-fade-in">
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <p className="text-green-800 font-medium">
                 ✓ Materi berhasil diupdate! Mengarahkan ke halaman detail...
@@ -419,34 +504,44 @@ export default function EditMateri() {
                 File Materi
               </label>
               
-              {/* Existing File Display */}
+              {/* Existing File Display with Download Button */}
               {material?.file_path && !isDeleteFile && (
                 <div className="mb-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-2">
-                      <FontAwesomeIcon icon={faFilePdf} className="text-red-500" />
+                      <FontAwesomeIcon 
+                        icon={getFileIcon(material.file_path)} 
+                        className={`text-xl ${getFileIconColor(material.file_path)}`}
+                      />
                       <span className="text-sm text-gray-700">
-                        File saat ini: 
-                        <a
-                          href={material.file_path}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="ml-1 text-blue-600 hover:underline"
-                        >
-                          {material.file_path.split("/").pop()}
-                        </a>
+                        {getFileName(material.file_path)}
                       </span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleDeleteExistingFile}
-                      className="text-red-600 hover:text-red-700 text-sm flex items-center gap-1"
-                    >
-                      <FontAwesomeIcon icon={faTrash} />
-                      Hapus
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleDownload(material.file_path)}
+                        disabled={isDownloading}
+                        className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1"
+                      >
+                        {isDownloading ? (
+                          <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                        ) : (
+                          <FontAwesomeIcon icon={faDownload} />
+                        )}
+                        Download
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDeleteExistingFile}
+                        className="text-red-600 hover:text-red-700 text-sm flex items-center gap-1"
+                      >
+                        <FontAwesomeIcon icon={faTrash} />
+                        Hapus
+                      </button>
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 mt-2">
                     Terakhir diupload: {formatDateDisplay(material.created_at)}
                   </p>
                 </div>
@@ -473,7 +568,7 @@ export default function EditMateri() {
               {/* New File Upload */}
               {!isDeleteFile && (
                 <div
-                  className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-lg transition-colors ${
+                  className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-lg transition-colors cursor-pointer ${
                     dropActive
                       ? "border-blue-500 bg-blue-50"
                       : "border-gray-300 hover:border-blue-400"
@@ -484,6 +579,7 @@ export default function EditMateri() {
                   }}
                   onDragLeave={() => setDropActive(false)}
                   onDrop={handleDrop}
+                  onClick={() => document.getElementById('file-upload')?.click()}
                 >
                   <div className="space-y-1 text-center">
                     {newFile ? (
@@ -505,7 +601,10 @@ export default function EditMateri() {
                         </div>
                         <button
                           type="button"
-                          onClick={handleRemoveNewFile}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveNewFile();
+                          }}
                           className="text-red-500 hover:text-red-700"
                         >
                           <FontAwesomeIcon icon={faTrash} />
@@ -514,22 +613,12 @@ export default function EditMateri() {
                     ) : (
                       <>
                         <FontAwesomeIcon icon={faUpload} className="mx-auto h-12 w-12 text-gray-400" />
-                        <div className="flex text-sm text-gray-600">
-                          <label
-                            htmlFor="file-upload"
-                            className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500"
-                          >
-                            <span>Upload file baru</span>
-                            <input
-                              id="file-upload"
-                              name="file-upload"
-                              type="file"
-                              className="sr-only"
-                              onChange={handleFileChange}
-                              accept=".pdf,.doc,.docx,.ppt,.pptx"
-                            />
-                          </label>
-                          <p className="pl-1">atau drag and drop</p>
+                        <div className="flex text-sm text-gray-600 justify-center">
+                          <span className="font-medium text-blue-600 hover:text-blue-500">
+                            Klik untuk upload
+                          </span>
+                          <span className="mx-1">atau</span>
+                          <span>drag and drop</span>
                         </div>
                         <p className="text-xs text-gray-500">
                           PDF, DOC, DOCX, PPT, PPTX (Max. 10MB)
@@ -540,9 +629,17 @@ export default function EditMateri() {
                 </div>
               )}
 
+              <input
+                id="file-upload"
+                type="file"
+                className="hidden"
+                onChange={handleFileChange}
+                accept=".pdf,.doc,.docx,.ppt,.pptx"
+              />
+
               {!material?.file_path && !newFile && !isDeleteFile && (
                 <div className="mt-2 p-3 bg-gray-50 rounded-lg text-center">
-                  <p className="text-sm text-gray-500">Belum ada file untuk materi ini</p>
+                  <p className="text-sm text-gray-500">Belum ada file untuk materi ini. Upload file baru jika perlu.</p>
                 </div>
               )}
             </div>
@@ -554,6 +651,7 @@ export default function EditMateri() {
                 <li>Field dengan tanda <span className="text-red-500">*</span> wajib diisi</li>
                 <li>Jika upload file baru, file lama akan diganti</li>
                 <li>Kosongkan file jika tidak ingin mengubah file yang ada</li>
+                <li>File disimpan di server SFTP yang aman</li>
               </ul>
             </div>
 
@@ -569,12 +667,13 @@ export default function EditMateri() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`flex-1 py-3 px-4 rounded-lg font-medium text-white transition-all ${
+                className={`flex-1 py-3 px-4 rounded-lg font-medium text-white transition-all flex items-center justify-center gap-2 ${
                   isSubmitting
                     ? "bg-amber-400 cursor-not-allowed"
                     : "bg-amber-600 hover:bg-amber-700"
                 }`}
               >
+                {isSubmitting && <FontAwesomeIcon icon={faRotateRight} className="animate-spin" />}
                 {isSubmitting ? "Menyimpan..." : "Simpan Perubahan"}
               </button>
             </div>

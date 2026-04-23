@@ -1,19 +1,36 @@
 // BuatMateri.jsx
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faArrowLeft,
   faUpload,
   faFilePdf,
   faFileWord,
   faFilePowerpoint,
+  faTrash,
+  faSpinner,
+  faCheckCircle,
+  faExclamationCircle,
 } from "@fortawesome/free-solid-svg-icons";
 import HeaderBack from "../components/HeaderBack";
 import api from "../api/axios";
 
+const MAX_FILE_SIZE_MB = 10;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+const ALLOWED_FILE_TYPES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+];
+
+const ALLOWED_EXTENSIONS = [".pdf", ".doc", ".docx", ".ppt", ".pptx"];
+
 export default function BuatMateri() {
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
 
   // Form states sesuai payload API
   const [title, setTitle] = useState("");
@@ -25,6 +42,11 @@ export default function BuatMateri() {
   const [file, setFile] = useState(null);
   const [fileName, setFileName] = useState("");
 
+  // Upload states
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState("idle"); // idle, uploading, success, error
+  const [dropActive, setDropActive] = useState(false);
+
   // UI states
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -34,72 +56,136 @@ export default function BuatMateri() {
   const kelasOptions = ["10", "11", "12", "13"];
   const kelasIndexOptions = ["1", "2", "3"];
 
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
-    if (selectedFile) {
-      // Validasi file size (max 10MB = 10240 KB)
-      const maxSizeKB = 10240;
-      const fileSizeKB = selectedFile.size / 1024;
-
-      if (fileSizeKB > maxSizeKB) {
-        setErrorMessage(`Ukuran file terlalu besar. Maksimal ${maxSizeKB} KB`);
-        setFile(null);
-        setFileName("");
-        return;
-      }
-
-      // Validasi tipe file
-      const allowedTypes = [
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "application/vnd.ms-powerpoint",
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-      ];
-
-      if (!allowedTypes.includes(selectedFile.type)) {
-        setErrorMessage(
-          "Tipe file tidak didukung. Gunakan PDF, DOC, DOCX, PPT, atau PPTX",
-        );
-        setFile(null);
-        setFileName("");
-        return;
-      }
-
-      setFile(selectedFile);
-      setFileName(selectedFile.name);
-      setErrorMessage("");
+  const validateFile = (file) => {
+    if (!file) {
+      return "Pilih file terlebih dahulu";
     }
+
+    // Cek ukuran file
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      return `Ukuran file terlalu besar. Maksimal ${MAX_FILE_SIZE_MB}MB`;
+    }
+
+    // Cek tipe file
+    const extension = `.${file.name.split(".").pop().toLowerCase()}`;
+    const isExtensionAllowed = ALLOWED_EXTENSIONS.includes(extension);
+    const isMimeAllowed = ALLOWED_FILE_TYPES.includes(file.type);
+
+    if (!isExtensionAllowed && !isMimeAllowed) {
+      return "Tipe file tidak didukung. Gunakan PDF, DOC, DOCX, PPT, atau PPTX";
+    }
+
+    return null;
+  };
+
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
+
+    const error = validateFile(selectedFile);
+    if (error) {
+      setErrorMessage(error);
+      setFile(null);
+      setFileName("");
+      return;
+    }
+
+    setErrorMessage("");
+    setFile(selectedFile);
+    setFileName(selectedFile.name);
+    setUploadStatus("idle");
+    setUploadProgress(0);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setDropActive(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setDropActive(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDropActive(false);
+
+    const droppedFile = e.dataTransfer.files?.[0];
+    if (!droppedFile) return;
+
+    const error = validateFile(droppedFile);
+    if (error) {
+      setErrorMessage(error);
+      setFile(null);
+      setFileName("");
+      return;
+    }
+
+    setErrorMessage("");
+    setFile(droppedFile);
+    setFileName(droppedFile.name);
+    setUploadStatus("idle");
+    setUploadProgress(0);
+  };
+
+  const handleRemoveFile = () => {
+    setFile(null);
+    setFileName("");
+    setUploadStatus("idle");
+    setUploadProgress(0);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const getFileIcon = () => {
+    if (!file) return faUpload;
+    if (file.type === "application/pdf") return faFilePdf;
+    if (file.type?.includes("word")) return faFileWord;
+    if (file.type?.includes("powerpoint")) return faFilePowerpoint;
+    return faUpload;
+  };
+
+  const getFileIconColor = () => {
+    if (!file) return "text-gray-400";
+    if (file.type === "application/pdf") return "text-red-500";
+    if (file.type?.includes("word")) return "text-blue-500";
+    if (file.type?.includes("powerpoint")) return "text-orange-500";
+    return "text-gray-400";
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage("");
     setShowSuccess(false);
+    setUploadStatus("uploading");
+    setUploadProgress(0);
 
     // Validasi required fields
     if (!title) {
       setErrorMessage("Judul materi harus diisi");
+      setUploadStatus("idle");
       return;
     }
 
     if (!kelasTarget) {
       setErrorMessage("Kelas target harus dipilih");
+      setUploadStatus("idle");
       return;
     }
 
     if (!kelasIndexTarget) {
       setErrorMessage("Index kelas target harus dipilih");
+      setUploadStatus("idle");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Prepare FormData untuk multipart/form-data
       const formData = new FormData();
       formData.append("title", title);
-
       if (content) formData.append("content", content);
       formData.append("kelas_target", kelasTarget);
       formData.append("kelas_index_target", kelasIndexTarget);
@@ -107,54 +193,62 @@ export default function BuatMateri() {
       formData.append("submission_required", submissionRequired ? "1" : "0");
       if (file) formData.append("file", file);
 
-      // API: POST /api/materials
-      // Headers: Content-Type multipart/form-data (axios akan set otomatis)
-      // Authorization token handled by axios interceptor
-      await api.post("/materials", formData, {
+      const response = await api.post("/materials", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Accept: "application/json",
         },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total,
+          );
+          setUploadProgress(percentCompleted);
+        },
       });
 
-      setShowSuccess(true);
+      // Cek response sukses
+      if (response.data?.data || response.status === 201) {
+        setUploadStatus("success");
+        setShowSuccess(true);
 
-      // Reset form
-      setTitle("");
-      setContent("");
-      setKelasTarget("10");
-      setKelasIndexTarget("1");
-      setDeadline("");
-      setSubmissionRequired(false);
-      setFile(null);
-      setFileName("");
+        // Reset form
+        setTitle("");
+        setContent("");
+        setKelasTarget("10");
+        setKelasIndexTarget("1");
+        setDeadline("");
+        setSubmissionRequired(false);
+        setFile(null);
+        setFileName("");
+        setUploadProgress(0);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
 
-      // Redirect after 2 seconds
-      setTimeout(() => {
-        navigate("/admin/classes");
-      }, 2000);
+        // Redirect after 2 seconds
+        setTimeout(() => {
+          navigate("/admin/classes");
+        }, 2000);
+      } else {
+        throw new Error("Response tidak sesuai");
+      }
     } catch (error) {
       console.error("Gagal membuat materi:", error);
+      console.error("Response data:", error.response?.data);
+      console.error("Response status:", error.response?.status);
+      console.error("Response headers:", error.response?.headers);
 
-      // Handle validation errors dari API
-      if (error.response?.data?.errors) {
-        const errors = error.response.data.errors;
-        const firstError = Object.values(errors)[0]?.[0];
-        setErrorMessage(firstError || "Terjadi kesalahan validasi");
+      // Tampilkan detail error dari server
+      if (error.response?.data) {
+        setErrorMessage(JSON.stringify(error.response.data, null, 2));
       } else if (error.response?.data?.message) {
         setErrorMessage(error.response.data.message);
       } else {
-        setErrorMessage("Terjadi kesalahan saat membuat materi");
+        setErrorMessage(`Terjadi kesalahan: ${error.message}`);
       }
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Format date for datetime-local input
-  const formatDateForInput = (date) => {
-    const d = new Date(date);
-    return d.toISOString().slice(0, 16);
   };
 
   return (
@@ -179,8 +273,12 @@ export default function BuatMateri() {
 
         {/* Success Message */}
         {showSuccess && (
-          <div className="mb-6">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="mb-6 animate-fade-in">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
+              <FontAwesomeIcon
+                icon={faCheckCircle}
+                className="text-green-600 text-xl"
+              />
               <p className="text-green-800 font-medium">
                 ✓ Materi berhasil dibuat! Mengarahkan ke halaman kelas...
               </p>
@@ -191,7 +289,11 @@ export default function BuatMateri() {
         {/* Error Message */}
         {errorMessage && (
           <div className="mb-6">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+              <FontAwesomeIcon
+                icon={faExclamationCircle}
+                className="text-red-600"
+              />
               <p className="text-red-700 text-sm">{errorMessage}</p>
             </div>
           </div>
@@ -301,43 +403,92 @@ export default function BuatMateri() {
               </p>
             </div>
 
-            {/* File Upload - Optional */}
+            {/* File Upload - Optional with Drag & Drop */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 File Materi
               </label>
-              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-400 transition-colors">
-                <div className="space-y-1 text-center">
-                  {fileName ? (
-                    <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
-                      {file?.type === "application/pdf" && (
-                        <FontAwesomeIcon
-                          icon={faFilePdf}
-                          className="text-red-500 text-xl"
+
+              <div
+                className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-lg transition-all cursor-pointer
+                  ${dropActive ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-blue-400"}
+                  ${uploadStatus === "uploading" ? "opacity-50 pointer-events-none" : ""}
+                `}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => !fileName && fileInputRef.current?.click()}
+              >
+                <div className="space-y-2 text-center">
+                  {uploadStatus === "uploading" ? (
+                    <div className="text-center">
+                      <FontAwesomeIcon
+                        icon={faSpinner}
+                        className="mx-auto h-12 w-12 text-blue-500 animate-spin"
+                      />
+                      <p className="mt-2 text-sm text-gray-600">
+                        Mengupload file...
+                      </p>
+                      <div className="mt-3 w-64 bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadProgress}%` }}
                         />
-                      )}
-                      {file?.type?.includes("word") && (
-                        <FontAwesomeIcon
-                          icon={faFileWord}
-                          className="text-blue-500 text-xl"
-                        />
-                      )}
-                      {file?.type?.includes("powerpoint") && (
-                        <FontAwesomeIcon
-                          icon={faFilePowerpoint}
-                          className="text-orange-500 text-xl"
-                        />
-                      )}
-                      <span className="font-medium">{fileName}</span>
+                      </div>
+                      <p className="mt-1 text-xs text-gray-500">
+                        {uploadProgress}%
+                      </p>
+                    </div>
+                  ) : uploadStatus === "success" ? (
+                    <div className="text-center">
+                      <FontAwesomeIcon
+                        icon={faCheckCircle}
+                        className="mx-auto h-12 w-12 text-green-500"
+                      />
+                      <p className="mt-2 text-sm text-green-600">
+                        Upload berhasil!
+                      </p>
+                    </div>
+                  ) : uploadStatus === "error" ? (
+                    <div className="text-center">
+                      <FontAwesomeIcon
+                        icon={faExclamationCircle}
+                        className="mx-auto h-12 w-12 text-red-500"
+                      />
+                      <p className="mt-2 text-sm text-red-600">
+                        Upload gagal. Silakan coba lagi.
+                      </p>
                       <button
                         type="button"
-                        onClick={() => {
-                          setFile(null);
-                          setFileName("");
-                        }}
-                        className="text-red-500 hover:text-red-700 text-xs"
+                        onClick={() => setUploadStatus("idle")}
+                        className="mt-2 text-sm text-blue-600 hover:text-blue-700"
                       >
-                        Hapus
+                        Coba lagi
+                      </button>
+                    </div>
+                  ) : fileName ? (
+                    <div className="flex items-center justify-center gap-3">
+                      <FontAwesomeIcon
+                        icon={getFileIcon()}
+                        className={`text-4xl ${getFileIconColor()}`}
+                      />
+                      <div className="text-left">
+                        <p className="text-sm font-medium text-gray-700">
+                          {fileName}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {(file.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveFile();
+                        }}
+                        className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50"
+                      >
+                        <FontAwesomeIcon icon={faTrash} />
                       </button>
                     </div>
                   ) : (
@@ -346,51 +497,74 @@ export default function BuatMateri() {
                         icon={faUpload}
                         className="mx-auto h-12 w-12 text-gray-400"
                       />
-                      <div className="flex text-sm text-gray-600">
-                        <label
-                          htmlFor="file-upload"
-                          className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none"
-                        >
-                          <span>Upload file</span>
-                          <input
-                            id="file-upload"
-                            name="file-upload"
-                            type="file"
-                            className="sr-only"
-                            onChange={handleFileChange}
-                            accept=".pdf,.doc,.docx,.ppt,.pptx"
-                          />
-                        </label>
-                        <p className="pl-1">atau drag and drop</p>
+                      <div className="flex text-sm text-gray-600 justify-center">
+                        <span className="font-medium text-blue-600 hover:text-blue-500">
+                          Klik untuk upload
+                        </span>
+                        <span className="mx-1">atau</span>
+                        <span>drag and drop</span>
                       </div>
                       <p className="text-xs text-gray-500">
-                        PDF, DOC, DOCX, PPT, PPTX (Max. 10MB)
+                        PDF, DOC, DOCX, PPT, PPTX (Max. {MAX_FILE_SIZE_MB}MB)
                       </p>
                     </>
                   )}
                 </div>
               </div>
+
+              <input
+                ref={fileInputRef}
+                id="file-upload"
+                type="file"
+                className="hidden"
+                onChange={handleFileChange}
+                accept={ALLOWED_EXTENSIONS.join(",")}
+                disabled={uploadStatus === "uploading"}
+              />
+            </div>
+
+            {/* Info Box */}
+            <div className="p-3 bg-gray-50 rounded-lg text-xs text-gray-500">
+              <p className="font-medium mb-1">ℹ️ Informasi:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>
+                  Field dengan tanda <span className="text-red-500">*</span>{" "}
+                  wajib diisi
+                </li>
+                <li>
+                  File tidak wajib diupload, bisa ditambahkan nanti melalui edit
+                </li>
+                <li>Semua materi akan tersimpan di cloud storage (SFTP)</li>
+              </ul>
             </div>
 
             {/* Action Buttons */}
             <div className="flex gap-3 pt-4">
               <button
                 type="button"
-                onClick={() => navigate("/admin/classes")}
-                className="flex-1 py-3 px-4 rounded-lg font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-all"
+                onClick={() => navigate("/admin/dashboard")}
+                disabled={isLoading || uploadStatus === "uploading"}
+                className="flex-1 py-3 px-4 rounded-lg font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-all disabled:opacity-50"
               >
                 Batal
               </button>
               <button
                 type="submit"
-                disabled={isLoading}
-                className={`flex-1 py-3 px-4 rounded-lg font-medium text-white transition-all ${
-                  isLoading
-                    ? "bg-blue-400 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700"
-                }`}
+                disabled={isLoading || uploadStatus === "uploading"}
+                className={`flex-1 py-3 px-4 rounded-lg font-medium text-white transition-all flex items-center justify-center gap-2
+                  ${
+                    isLoading || uploadStatus === "uploading"
+                      ? "bg-blue-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700"
+                  }
+                `}
               >
-                {isLoading ? "Menyimpan..." : "Buat Materi"}
+                {(isLoading || uploadStatus === "uploading") && (
+                  <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                )}
+                {isLoading || uploadStatus === "uploading"
+                  ? "Menyimpan..."
+                  : "Buat Materi"}
               </button>
             </div>
           </form>
