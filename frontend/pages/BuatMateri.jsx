@@ -227,7 +227,7 @@ export default function BuatMateri() {
 
         // Redirect after 2 seconds
         setTimeout(() => {
-          navigate("/admin/classes");
+          navigate("/admin/dashboard");
         }, 2000);
       } else {
         throw new Error("Response tidak sesuai");

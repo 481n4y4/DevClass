@@ -120,6 +120,28 @@ export default function MaterialsTeacher() {
     return filePath.split("/").pop();
   };
 
+  const buildDownloadPath = (filePath) => {
+    if (!filePath) return "";
+    return filePath
+      .split("/")
+      .filter(Boolean)
+      .map((segment) => encodeURIComponent(segment))
+      .join("/");
+  };
+
+  const buildDirectFileCandidates = (filePath) => {
+    const normalized = (filePath || "").replace(/^\/+/, "");
+    const fileName = getFileName(normalized);
+
+    return [
+      `/${normalized}`,
+      `/uploads/${normalized}`,
+      `/storage/${normalized}`,
+      `/files/${normalized}`,
+      `/uploads/${fileName}`,
+    ].filter(Boolean);
+  };
+
   // DOWNLOAD MENGGUNAKAN API ENDPOINT (REKOMENDASI UNTUK SFTP)
   const handleDownload = async (filePath) => {
     if (!filePath) {
@@ -131,21 +153,49 @@ export default function MaterialsTeacher() {
     setDownloadError("");
 
     try {
-      // Gunakan endpoint API download
-      const response = await api.get(
-        `/download/${encodeURIComponent(filePath)}`,
-        {
-          responseType: "blob",
-        },
-      );
+      let downloadedBlob = null;
 
-      // Cek response
-      if (response.status !== 200) {
-        throw new Error(`HTTP ${response.status}`);
+      try {
+        const response = await api.get(
+          `/download/${buildDownloadPath(filePath)}`,
+          {
+            responseType: "blob",
+          },
+        );
+
+        if (response.status === 200) {
+          downloadedBlob = response.data;
+        }
+      } catch (apiError) {
+        if (apiError?.response?.status !== 404) {
+          throw apiError;
+        }
+      }
+
+      if (!downloadedBlob) {
+        const staticCandidates = buildDirectFileCandidates(filePath);
+        for (const url of staticCandidates) {
+          try {
+            const response = await fetch(url, {
+              credentials: "include",
+            });
+
+            if (response.ok) {
+              downloadedBlob = await response.blob();
+              break;
+            }
+          } catch {
+            // Lanjut ke kandidat berikutnya.
+          }
+        }
+      }
+
+      if (!downloadedBlob) {
+        throw new Error("FILE_NOT_FOUND");
       }
 
       // Buat blob URL dan trigger download
-      const blob = new Blob([response.data]);
+      const blob = new Blob([downloadedBlob]);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -161,7 +211,10 @@ export default function MaterialsTeacher() {
 
       if (error.response?.status === 403) {
         setDownloadError("Akses ditolak. Silakan login kembali.");
-      } else if (error.response?.status === 404) {
+      } else if (
+        error.response?.status === 404 ||
+        error.message === "FILE_NOT_FOUND"
+      ) {
         setDownloadError("File tidak ditemukan di server.");
       } else if (error.code === "ERR_NETWORK") {
         setDownloadError("Gagal terhubung ke server. Periksa koneksi.");
@@ -280,7 +333,7 @@ export default function MaterialsTeacher() {
             Material dengan ID {id} tidak tersedia
           </p>
           <button
-            onClick={() => navigate("/admin/classes")}
+            onClick={() => navigate("/admin/dashboard")}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             Kembali ke Daftar Materi
@@ -294,7 +347,7 @@ export default function MaterialsTeacher() {
     <div className="min-h-screen bg-slate-50">
       <HeaderBack
         showBackButton={true}
-        backTo="/admin/classes"
+        backTo="/admin/dashboard"
         title={material.title}
       />
 

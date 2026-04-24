@@ -2,9 +2,9 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { 
-  faDownload, 
-  faRotateRight, 
+import {
+  faDownload,
+  faRotateRight,
   faUpload,
   faSpinner,
   faCheckCircle,
@@ -33,7 +33,7 @@ export default function Materials() {
   const [material, setMaterial] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  
+
   // Submission states
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadError, setUploadError] = useState("");
@@ -41,7 +41,7 @@ export default function Materials() {
   const [uploadStatus, setUploadStatus] = useState("idle"); // idle, uploading, success, error
   const [dropActive, setDropActive] = useState(false);
   const [submissionData, setSubmissionData] = useState(null);
-  
+
   // Download state
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -58,7 +58,7 @@ export default function Materials() {
 
       const data = response.data?.data || null;
       setMaterial(data);
-      
+
       // Cek apakah user sudah pernah submit
       if (data?.submission_required) {
         checkExistingSubmission();
@@ -73,24 +73,59 @@ export default function Materials() {
 
   // Check if student already submitted
   const checkExistingSubmission = async () => {
+    const getCurrentUserId = () => {
+      try {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        return user?.id || user?._id || null;
+      } catch {
+        return null;
+      }
+    };
+
+    const userId = getCurrentUserId();
+
     try {
-      // API: GET /api/materials/{id}/my-submission (if available)
-      // Atau cek dari response submissions
-      const response = await api.get(`/materials/${id}/submissions`, {
+      // API student endpoint avoids role-protected submissions list endpoint.
+      const response = await api.get(`/materials/${id}/my-submission`, {
         headers: { Accept: "application/json" },
       });
-      
-      const submissions = response.data?.data || [];
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
-      const mySubmission = submissions.find(sub => sub.student?.id === user.id);
-      
+
+      const mySubmission = response.data?.data || null;
       if (mySubmission) {
         setSubmissionData(mySubmission);
         setUploadStatus("success");
       }
     } catch (error) {
-      // Tidak error jika belum ada submission
-      console.log("Belum ada submission atau endpoint tidak tersedia");
+      // Fallback untuk backend yang belum memiliki endpoint my-submission.
+      if (error?.response?.status === 404) {
+        try {
+          const listResponse = await api.get(`/materials/${id}/submissions`, {
+            headers: { Accept: "application/json" },
+          });
+
+          const submissions = listResponse.data?.data || [];
+          const mySubmission = submissions.find((sub) => {
+            const studentId =
+              sub?.student?.id || sub?.student?._id || sub?.student_id;
+            return userId && String(studentId) === String(userId);
+          });
+
+          if (mySubmission) {
+            setSubmissionData(mySubmission);
+            setUploadStatus("success");
+          }
+        } catch (fallbackError) {
+          // Endpoint fallback bisa dibatasi role (403) atau belum tersedia.
+          if (
+            fallbackError?.response?.status !== 403 &&
+            fallbackError?.response?.status !== 404
+          ) {
+            console.error("Gagal cek submission:", fallbackError);
+          }
+        }
+      } else if (error?.response?.status !== 403) {
+        console.error("Gagal cek submission:", error);
+      }
     }
   };
 
@@ -140,6 +175,41 @@ export default function Materials() {
     return filePath.split("/").pop();
   };
 
+  const buildDownloadPath = (filePath) => {
+    if (!filePath) return "";
+    return filePath
+      .split("/")
+      .filter(Boolean)
+      .map((segment) => encodeURIComponent(segment))
+      .join("/");
+  };
+
+  const buildDownloadCandidates = (filePath) => {
+    const normalized = (filePath || "").replace(/^\/+/, "");
+    const fileName = getFileName(normalized);
+    const encodedFullPath = buildDownloadPath(normalized);
+    const encodedFileName = encodeURIComponent(fileName);
+
+    return [
+      `/download/${encodedFullPath}`,
+      `/download/uploads/${encodedFullPath}`,
+      `/download/${encodedFileName}`,
+    ].filter(Boolean);
+  };
+
+  const buildDirectFileCandidates = (filePath) => {
+    const normalized = (filePath || "").replace(/^\/+/, "");
+    const fileName = getFileName(normalized);
+
+    return [
+      `/${normalized}`,
+      `/uploads/${normalized}`,
+      `/storage/${normalized}`,
+      `/files/${normalized}`,
+      `/uploads/${fileName}`,
+    ].filter(Boolean);
+  };
+
   // Download materi file
   const handleDownloadMaterial = async (filePath) => {
     if (!filePath) {
@@ -151,29 +221,65 @@ export default function Materials() {
     setErrorMessage("");
 
     try {
-      const response = await api.get(`/download/${encodeURIComponent(filePath)}`, {
-        responseType: 'blob',
-      });
-      
-      if (response.status !== 200) {
-        throw new Error(`HTTP ${response.status}`);
+      let downloadedBlob = null;
+      const candidates = buildDownloadCandidates(filePath);
+
+      for (const url of candidates) {
+        try {
+          const response = await api.get(url, {
+            responseType: "blob",
+          });
+
+          if (response.status === 200) {
+            downloadedBlob = response.data;
+            break;
+          }
+        } catch (downloadError) {
+          if (downloadError?.response?.status !== 404) {
+            throw downloadError;
+          }
+        }
       }
-      
-      const blob = new Blob([response.data]);
+
+      if (!downloadedBlob) {
+        const staticCandidates = buildDirectFileCandidates(filePath);
+        for (const url of staticCandidates) {
+          try {
+            const response = await fetch(url, {
+              credentials: "include",
+            });
+
+            if (response.ok) {
+              downloadedBlob = await response.blob();
+              break;
+            }
+          } catch {
+            // Lanjut ke kandidat berikutnya.
+          }
+        }
+      }
+
+      if (!downloadedBlob) {
+        throw new Error("FILE_NOT_FOUND");
+      }
+
+      const blob = new Blob([downloadedBlob]);
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
       link.download = getFileName(filePath);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      
     } catch (error) {
       console.error("Download error:", error);
       if (error.response?.status === 403) {
         setErrorMessage("Akses ditolak. Silakan login kembali.");
-      } else if (error.response?.status === 404) {
+      } else if (
+        error.response?.status === 404 ||
+        error.message === "FILE_NOT_FOUND"
+      ) {
         setErrorMessage("File tidak ditemukan.");
       } else {
         setErrorMessage(`Gagal mengunduh file: ${error.message}`);
@@ -261,7 +367,7 @@ export default function Materials() {
         onUploadProgress: (progressEvent) => {
           if (progressEvent.total) {
             const percentCompleted = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total
+              (progressEvent.loaded * 100) / progressEvent.total,
             );
             setUploadProgress(percentCompleted);
           }
@@ -271,10 +377,10 @@ export default function Materials() {
       if (response.status === 200 || response.status === 201) {
         setUploadStatus("success");
         setSubmissionData(response.data?.data);
-        
+
         // Reset file input
         setUploadFile(null);
-        
+
         // Tampilkan pesan sukses
         setTimeout(() => {
           setUploadStatus("idle");
@@ -283,7 +389,7 @@ export default function Materials() {
     } catch (error) {
       console.error("Upload error:", error);
       setUploadStatus("error");
-      
+
       if (error.response?.data?.message) {
         setUploadError(error.response.data.message);
       } else if (error.response?.data?.errors) {
@@ -293,7 +399,7 @@ export default function Materials() {
       } else {
         setUploadError("Gagal mengupload tugas. Silakan coba lagi.");
       }
-      
+
       setTimeout(() => {
         setUploadStatus("idle");
         setUploadError("");
@@ -316,7 +422,10 @@ export default function Materials() {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <FontAwesomeIcon icon={faExclamationCircle} className="text-4xl text-red-500 mb-4" />
+          <FontAwesomeIcon
+            icon={faExclamationCircle}
+            className="text-4xl text-red-500 mb-4"
+          />
           <h2 className="text-2xl font-bold text-slate-800 mb-2">
             Material tidak ditemukan
           </h2>
@@ -411,8 +520,8 @@ export default function Materials() {
               </h3>
               <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
                 <div className="flex items-center gap-3">
-                  <FontAwesomeIcon 
-                    icon={getFileIcon(material.file_path)} 
+                  <FontAwesomeIcon
+                    icon={getFileIcon(material.file_path)}
                     className={`text-2xl ${getFileIconColor(material.file_path)}`}
                   />
                   <div>
@@ -427,7 +536,10 @@ export default function Materials() {
                   className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors disabled:opacity-50"
                 >
                   {isDownloading ? (
-                    <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                    <FontAwesomeIcon
+                      icon={faSpinner}
+                      className="animate-spin"
+                    />
                   ) : (
                     <FontAwesomeIcon icon={faDownload} />
                   )}
@@ -452,9 +564,14 @@ export default function Materials() {
             {submissionData && uploadStatus === "success" ? (
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <div className="flex items-center gap-3">
-                  <FontAwesomeIcon icon={faCheckCircle} className="text-green-600 text-xl" />
+                  <FontAwesomeIcon
+                    icon={faCheckCircle}
+                    className="text-green-600 text-xl"
+                  />
                   <div>
-                    <p className="text-green-800 font-medium">Tugas berhasil dikirim!</p>
+                    <p className="text-green-800 font-medium">
+                      Tugas berhasil dikirim!
+                    </p>
                     <p className="text-green-600 text-sm">
                       Terkirim pada: {formatDate(submissionData.submitted_at)}
                     </p>
@@ -476,12 +593,19 @@ export default function Materials() {
                   }}
                   onDragLeave={() => setDropActive(false)}
                   onDrop={handleDrop}
-                  onClick={() => document.getElementById('file-upload')?.click()}
+                  onClick={() =>
+                    document.getElementById("file-upload")?.click()
+                  }
                 >
                   {uploadFile ? (
                     <div className="text-center">
-                      <FontAwesomeIcon icon={faFileAlt} className="text-3xl text-blue-500 mb-2" />
-                      <p className="font-medium text-gray-700">{uploadFile.name}</p>
+                      <FontAwesomeIcon
+                        icon={faFileAlt}
+                        className="text-3xl text-blue-500 mb-2"
+                      />
+                      <p className="font-medium text-gray-700">
+                        {uploadFile.name}
+                      </p>
                       <p className="text-xs text-gray-500">
                         {(uploadFile.size / 1024 / 1024).toFixed(2)} MB
                       </p>
@@ -498,7 +622,10 @@ export default function Materials() {
                     </div>
                   ) : (
                     <>
-                      <FontAwesomeIcon icon={faUpload} className="mx-auto h-10 w-10 text-gray-400 mb-2" />
+                      <FontAwesomeIcon
+                        icon={faUpload}
+                        className="mx-auto h-10 w-10 text-gray-400 mb-2"
+                      />
                       <p className="text-gray-600">
                         Drag & drop file di sini, atau klik untuk memilih
                       </p>
@@ -547,15 +674,19 @@ export default function Materials() {
                   onClick={handleSubmitAssignment}
                   disabled={!uploadFile || uploadStatus === "uploading"}
                   className={`mt-4 w-full rounded-lg px-4 py-3 text-sm font-medium text-white transition-colors flex items-center justify-center gap-2
-                    ${!uploadFile || uploadStatus === "uploading"
-                      ? "bg-gray-300 cursor-not-allowed"
-                      : "bg-blue-600 hover:bg-blue-700"
+                    ${
+                      !uploadFile || uploadStatus === "uploading"
+                        ? "bg-gray-300 cursor-not-allowed"
+                        : "bg-blue-600 hover:bg-blue-700"
                     }
                   `}
                 >
                   {uploadStatus === "uploading" ? (
                     <>
-                      <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                      <FontAwesomeIcon
+                        icon={faSpinner}
+                        className="animate-spin"
+                      />
                       Mengunggah...
                     </>
                   ) : (
