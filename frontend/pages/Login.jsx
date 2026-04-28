@@ -4,7 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 import logo from "../assets/img/Logo.png";
 
 export default function Login() {
-  const [nis, setNis] = useState("");
+  const [identifier, setIdentifier] = useState(""); // Can be NIS or email
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -16,56 +16,48 @@ export default function Login() {
     setShowPassword(!showPassword);
   };
 
+  // Function to detect if input is email or NIS
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
-    // Validasi sederhana
-    if (!nis || !password) {
-      setError("NIS dan password harus diisi");
+    if (!identifier || !password) {
+      setError(`Email/NIS dan password harus diisi`);
       setIsLoading(false);
       return;
     }
 
     try {
-      // API: POST /api/login
-      // Headers: Accept: application/json, Content-Type: application/json
-      // Body: { "nis": "string", "password": "string" }
-      const response = await api.post(
-        "/login",
-        { nis, password },
-        {
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-        },
-      );
+      const response = await api.post("/login", {
+        nis: identifier,
+        password: password,
+      });
 
-      const { token } = response.data;
+      const { token, user } = response.data;
 
-      // Simpan token
+      // Simpan data
       localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
 
-      // Navigasi ke dashboard siswa
-      navigate("/dashboard");
+      // Cek apakah ini akun guru/admin (NIS berisi email)
+      const isTeacher = user.nis && user.nis.includes("@");
+
+      // Navigasi
+      if (isTeacher) {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
       console.error(err);
-      const status = err.response?.status;
-      if (status === 401) {
-        setError("NIS atau password salah");
-        return;
+      if (err.response?.status === 401) {
+        setError(`Email/NIS atau password salah`);
+      } else if (err.response?.status === 422) {
+        setError(err.response?.data?.message || "Data tidak valid");
+      } else {
+        setError("Terjadi kesalahan. Silakan coba lagi.");
       }
-      if (status === 422) {
-        setError("Data tidak valid. Periksa NIS dan password Anda.");
-        return;
-      }
-      if (status === 404) {
-        setError("Akun siswa tidak ditemukan");
-        return;
-      }
-      setError("Terjadi kesalahan. Silakan coba lagi.");
     } finally {
       setIsLoading(false);
     }
@@ -124,10 +116,10 @@ export default function Login() {
               </div>
             </Link>
             <h2 className="text-2xl font-bold text-gray-800">
-              Masuk ke Akun Siswa
+              Masuk ke Akun Anda
             </h2>
             <p className="text-gray-600 mt-2">
-              Masuk untuk mengakses kelas, tugas, dan materi Anda
+              Masukkan NIS (untuk siswa) atau Email (untuk guru/admin)
             </p>
           </div>
 
@@ -140,13 +132,13 @@ export default function Login() {
             )}
 
             <form onSubmit={handleLogin}>
-              {/* NIS Input */}
+              {/* Identifier Input - Works for both NIS and Email */}
               <div className="mb-5">
                 <label
-                  htmlFor="nis"
+                  htmlFor="identifier"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  NIS
+                  NIS / Email
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -165,17 +157,25 @@ export default function Login() {
                     </svg>
                   </div>
                   <input
-                    id="nis"
+                    id="identifier"
                     type="text"
-                    placeholder="Masukkan NIS"
+                    placeholder="Masukkan NIS atau Email (contoh: 12345 atau guru@devclass.com)"
                     className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    value={nis}
+                    value={identifier}
                     onChange={(e) => {
-                      const nextNis = e.target.value;
-                      setNis(nextNis);
-                      // Password default sama dengan NIS (dokumentasi API)
-                      if (!password) {
-                        setPassword(nextNis);
+                      const value = e.target.value;
+                      setIdentifier(value);
+
+                      // Auto-fill password for students only if the input is numeric (NIS)
+                      // and password is empty or was auto-filled before
+                      if (/^\d+$/.test(value) && !password) {
+                        setPassword(value);
+                      } else if (isEmail(value) && password === identifier) {
+                        // Don't auto-fill password for email
+                        // Only clear if it was previously auto-filled from NIS
+                        if (!isEmail(identifier) && password === identifier) {
+                          setPassword("");
+                        }
                       }
                     }}
                     required
@@ -183,7 +183,8 @@ export default function Login() {
                   />
                 </div>
                 <p className="mt-2 text-xs text-gray-500">
-                  Password default mengikuti NIS Anda.
+                  Gunakan NIS untuk siswa (password default = NIS) atau Email
+                  untuk guru/admin
                 </p>
               </div>
 
@@ -332,15 +333,6 @@ export default function Login() {
 
             {/* Register Link */}
             <div className="mt-6 text-center">
-              {/* <p className="text-gray-600">
-                Belum punya akun?{" "}
-                <Link
-                  to="/register"
-                  className="text-blue-600 font-semibold hover:text-blue-800 transition-colors"
-                >
-                  Daftar sekarang
-                </Link>
-              </p> */}
               <p className="mt-4 text-sm text-gray-500">
                 Dengan mendaftar, Anda menyetujui{" "}
                 <a href="#" className="text-blue-600 hover:text-blue-800">
