@@ -6,7 +6,6 @@ import {
   faMagnifyingGlass,
   faRotateRight,
   faDownload,
-  faArrowUpRightFromSquare,
   faUsers,
   faClock,
   faTasks,
@@ -77,7 +76,7 @@ const ClassesPageTeacher = () => {
     try {
       // API: DELETE /api/materials/{id}
       // Headers: Accept: application/json, Authorization: Bearer {token}
-      const response = await api.delete(`/materials/${materialToDelete.id}`, {
+      await api.delete(`/materials/${materialToDelete.id}`, {
         headers: {
           Accept: "application/json",
         },
@@ -207,7 +206,7 @@ const ClassesPageTeacher = () => {
       <Header toggleSidebar={() => {}} isSidebarOpen={false} />
       <div className="p-6 pt-20">
         {/* Header with Create Class Button */}
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-6">
+        <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2 className="text-2xl font-bold text-gray-800">
               Kelola Materials
@@ -217,14 +216,23 @@ const ClassesPageTeacher = () => {
             </p>
           </div>
 
-          {/* Tombol Buat Materi Baru */}
-          <button
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-            onClick={() => navigate("/BuatMateri")}
-          >
-            <FontAwesomeIcon icon={faPlus} />
-            Buat Materi Baru
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white shadow-sm transition-colors hover:bg-blue-700"
+              onClick={() => navigate("/BuatMateri")}
+            >
+              <FontAwesomeIcon icon={faPlus} />
+              Buat Materi Baru
+            </button>
+
+            <button
+              className="flex items-center gap-2 rounded-lg border border-blue-200 bg-white px-4 py-2 text-blue-700 shadow-sm transition-colors hover:bg-blue-50"
+              onClick={() => navigate("/admin/users")}
+            >
+              <FontAwesomeIcon icon={faUsers} />
+              Lihat Semua User
+            </button>
+          </div>
         </div>
 
         {/* Search and Filters */}

@@ -11,8 +11,10 @@ import BuatMateri from "./pages/BuatMateri";
 import Kerjakan from "./pages/Kerjakan";
 import BuatPengumuman from "./pages/BuatPengumuman";
 import Selengkapnya from "./pages/Selengkapnya";
-import LoginGuru from "./pages/LoginGuru";
 import DashboardTeacher from "./pages/DashboardTeacher";
+import ListUsers from "./pages/ListUsers";
+import AddUser from "./pages/AddUser";
+import EditUser from "./pages/EditUser";
 import MaterialsTeacher from "./pages/MaterialsTeacher";
 import EditMateri from "./pages/EditMateri";
 
@@ -29,7 +31,7 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/admin/login" element={<LoginGuru />} />
+        <Route path="/admin/login" element={<Login />} />
 
         {/* Main Dashboard */}
         <Route
@@ -46,6 +48,33 @@ export default function App() {
           element={
             <ProtectedRoute>
               <DashboardTeacher />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute>
+              <ListUsers />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/users/add"
+          element={
+            <ProtectedRoute>
+              <AddUser />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/users/:id/edit"
+          element={
+            <ProtectedRoute>
+              <EditUser />
             </ProtectedRoute>
           }
         />
@@ -76,7 +105,6 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-        
 
         <Route
           path="/bergabung"
