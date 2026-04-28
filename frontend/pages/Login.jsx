@@ -86,13 +86,6 @@ export default function Login() {
             <Link to="/" className="text-gray-600 hover:text-gray-900">
               Beranda
             </Link>
-            <span className="text-gray-300">|</span>
-            <Link
-              to="/register"
-              className="text-blue-600 font-semibold hover:text-blue-800"
-            >
-              Daftar
-            </Link>
           </div>
         </div>
       </nav>

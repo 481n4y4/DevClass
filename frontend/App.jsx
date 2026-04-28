@@ -3,7 +3,6 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import LandingPage from "./pages/Landing";
-// import Class from "./pages/Class";
 import Materials from "./pages/Materials";
 import Profile from "./pages/Profile";
 import Bergabung from "./pages/Bergabung";
