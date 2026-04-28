@@ -1,5 +1,5 @@
 // MaterialsTeacher.jsx
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -11,18 +11,11 @@ import {
   faFileAlt,
   faSpinner,
   faExclamationCircle,
+  faStar,
+  faCheck,
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../api/axios";
 import HeaderBack from "../components/HeaderBack";
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
-const ALLOWED_MIME_TYPES = [
-  "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.ms-powerpoint",
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-];
 
 export default function MaterialsTeacher() {
   const { id } = useParams();
@@ -33,12 +26,30 @@ export default function MaterialsTeacher() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState("");
 
-  const [uploadFile, setUploadFile] = useState(null);
-  const [uploadError, setUploadError] = useState("");
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStatus, setUploadStatus] = useState("idle");
-  const [dropActive, setDropActive] = useState(false);
-  const uploadTimerRef = useRef(null);
+  // Submission states
+  const [submissions, setSubmissions] = useState([]);
+  const [isLoadingSubmissions, setIsLoadingSubmissions] = useState(false);
+  const [gradingModal, setGradingModal] = useState(null);
+  const [gradingScore, setGradingScore] = useState("");
+  const [gradingFeedback, setGradingFeedback] = useState("");
+  const [gradingError, setGradingError] = useState("");
+  const [isSavingGrade, setIsSavingGrade] = useState(false);
+
+  const fetchSubmissions = useCallback(async () => {
+    setIsLoadingSubmissions(true);
+    try {
+      const response = await api.get(`/materials/${id}/submissions`, {
+        headers: {
+          Accept: "application/json",
+        },
+      });
+      setSubmissions(response.data?.data || []);
+    } catch (error) {
+      console.error("Gagal memuat submissions:", error);
+    } finally {
+      setIsLoadingSubmissions(false);
+    }
+  }, [id]);
 
   const fetchMaterial = useCallback(async () => {
     setIsLoading(true);
@@ -53,21 +64,19 @@ export default function MaterialsTeacher() {
 
       const data = response.data?.data || null;
       setMaterial(data);
+      if (data?.submission_required) {
+        fetchSubmissions();
+      }
     } catch (error) {
       console.error("Gagal memuat detail material:", error);
       setErrorMessage("Gagal memuat detail material. Silakan coba lagi.");
     } finally {
       setIsLoading(false);
     }
-  }, [id]);
+  }, [id, fetchSubmissions]);
 
   useEffect(() => {
     fetchMaterial();
-    return () => {
-      if (uploadTimerRef.current) {
-        clearInterval(uploadTimerRef.current);
-      }
-    };
   }, [fetchMaterial]);
 
   const formatDate = (value) => {
@@ -227,84 +236,41 @@ export default function MaterialsTeacher() {
     }
   };
 
-  const validateFile = (file) => {
-    if (!file) {
-      return "Silakan pilih file terlebih dahulu.";
+  const handleGradeSubmission = (submission) => {
+    setGradingModal(submission);
+    if (submission.grade) {
+      setGradingScore(submission.grade.score || "");
+      setGradingFeedback(submission.grade.feedback || "");
+    } else {
+      setGradingScore("");
+      setGradingFeedback("");
     }
-
-    const extension = file.name.split(".").pop()?.toLowerCase();
-    const allowedExtensions = ["pdf", "doc", "docx", "ppt", "pptx"];
-    const isMimeAllowed = ALLOWED_MIME_TYPES.includes(file.type);
-    const isExtensionAllowed = allowedExtensions.includes(extension);
-
-    if (!isMimeAllowed && !isExtensionAllowed) {
-      return "Format file harus PDF, DOC, DOCX, PPT, atau PPTX.";
-    }
-
-    if (file.size > MAX_FILE_SIZE) {
-      return `Ukuran file maksimal ${MAX_FILE_SIZE / 1024 / 1024}MB.`;
-    }
-
-    return "";
+    setGradingError("");
   };
 
-  const handleFileChange = (event) => {
-    const file = event.target.files?.[0];
-    const error = validateFile(file);
-    if (error) {
-      setUploadFile(null);
-      setUploadError(error);
-      return;
-    }
-    setUploadError("");
-    setUploadFile(file || null);
-  };
-
-  const handleDrop = (event) => {
-    event.preventDefault();
-    setDropActive(false);
-    const file = event.dataTransfer.files?.[0];
-    const error = validateFile(file);
-    if (error) {
-      setUploadFile(null);
-      setUploadError(error);
-      return;
-    }
-    setUploadError("");
-    setUploadFile(file || null);
-  };
-
-  const handleSubmitAssignment = async () => {
-    if (!material?.submission_required) {
-      setUploadError("Material ini tidak membutuhkan submission.");
+  const handleSaveGrade = async () => {
+    if (!gradingScore || gradingScore < 0 || gradingScore > 100) {
+      setGradingError("Nilai harus antara 0-100");
       return;
     }
 
-    const error = validateFile(uploadFile);
-    if (error) {
-      setUploadError(error);
-      return;
-    }
+    setIsSavingGrade(true);
+    setGradingError("");
 
-    setUploadStatus("uploading");
-    setUploadError("");
-    setUploadProgress(0);
-
-    if (uploadTimerRef.current) {
-      clearInterval(uploadTimerRef.current);
-    }
-
-    // Simulasi progress
-    uploadTimerRef.current = setInterval(() => {
-      setUploadProgress((prev) => {
-        const next = Math.min(prev + 12, 100);
-        if (next === 100) {
-          clearInterval(uploadTimerRef.current);
-          setUploadStatus("success");
-        }
-        return next;
+    try {
+      await api.post(`/submissions/${gradingModal.id}/grade`, {
+        score: parseInt(gradingScore),
+        feedback: gradingFeedback || null,
       });
-    }, 180);
+
+      setGradingModal(null);
+      fetchSubmissions();
+    } catch (error) {
+      console.error("Gagal menyimpan nilai:", error);
+      setGradingError(error.response?.data?.message || "Gagal menyimpan nilai");
+    } finally {
+      setIsSavingGrade(false);
+    }
   };
 
   if (isLoading) {
@@ -493,6 +459,191 @@ export default function MaterialsTeacher() {
             </div>
           )}
         </div>
+
+        {/* Submissions List */}
+        {material.submission_required && (
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-slate-800 mb-4">
+              Pengumpulan Siswa ({submissions.length})
+            </h2>
+
+            {isLoadingSubmissions ? (
+              <div className="text-center py-8">
+                <FontAwesomeIcon
+                  icon={faSpinner}
+                  className="text-2xl text-blue-600 animate-spin mb-2"
+                />
+                <p className="text-slate-600">Memuat data pengumpulan...</p>
+              </div>
+            ) : submissions.length === 0 ? (
+              <div className="text-center py-8 bg-slate-50 rounded-lg">
+                <p className="text-slate-600">
+                  Belum ada siswa yang mengumpulkan
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="text-left px-4 py-3 font-semibold text-slate-700">
+                        Nama Siswa
+                      </th>
+                      <th className="text-left px-4 py-3 font-semibold text-slate-700">
+                        Waktu Submit
+                      </th>
+                      <th className="text-center px-4 py-3 font-semibold text-slate-700">
+                        File
+                      </th>
+                      <th className="text-center px-4 py-3 font-semibold text-slate-700">
+                        Nilai
+                      </th>
+                      <th className="text-center px-4 py-3 font-semibold text-slate-700">
+                        Aksi
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {submissions.map((submission) => (
+                      <tr
+                        key={submission.id}
+                        className="border-b border-slate-200 hover:bg-slate-50"
+                      >
+                        <td className="px-4 py-3 text-slate-800 font-medium">
+                          {submission.student?.name || "-"}
+                        </td>
+                        <td className="px-4 py-3 text-slate-600">
+                          {formatDateShort(submission.submitted_at)}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            onClick={() => handleDownload(submission.file_path)}
+                            className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+                            title="Download file"
+                          >
+                            <FontAwesomeIcon
+                              icon={faDownload}
+                              className="text-sm"
+                            />
+                            Download
+                          </button>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {submission.grade ? (
+                            <div className="flex items-center justify-center gap-1">
+                              <FontAwesomeIcon
+                                icon={faStar}
+                                className="text-yellow-500"
+                              />
+                              <span className="font-semibold text-slate-800">
+                                {submission.grade.score}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400">-</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            onClick={() => handleGradeSubmission(submission)}
+                            className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg transition-colors ${
+                              submission.grade
+                                ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
+                                : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                            }`}
+                          >
+                            <FontAwesomeIcon
+                              icon={faStar}
+                              className="text-sm"
+                            />
+                            {submission.grade ? "Edit Nilai" : "Beri Nilai"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Grading Modal */}
+        {gradingModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+              <h3 className="text-lg font-semibold text-slate-800 mb-2">
+                Beri Nilai
+              </h3>
+              <p className="text-sm text-slate-600 mb-4">
+                {gradingModal.student?.name}
+              </p>
+
+              {gradingError && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-600">{gradingError}</p>
+                </div>
+              )}
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Nilai (0-100)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={gradingScore}
+                  onChange={(e) => setGradingScore(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Masukkan nilai"
+                />
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Feedback (opsional)
+                </label>
+                <textarea
+                  value={gradingFeedback}
+                  onChange={(e) => setGradingFeedback(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Berikan feedback kepada siswa"
+                  rows="4"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setGradingModal(null)}
+                  className="flex-1 px-4 py-2 bg-slate-200 text-slate-800 rounded-lg hover:bg-slate-300 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleSaveGrade}
+                  disabled={isSavingGrade}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isSavingGrade ? (
+                    <>
+                      <FontAwesomeIcon
+                        icon={faSpinner}
+                        className="animate-spin"
+                      />
+                      Menyimpan...
+                    </>
+                  ) : (
+                    <>
+                      <FontAwesomeIcon icon={faCheck} />
+                      Simpan Nilai
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Teacher Actions */}
         <div className="mt-6 flex gap-3 justify-end">

@@ -12,6 +12,10 @@ export default function Login() {
 
   const [showPassword, setShowPassword] = useState(false);
 
+  const isEmail = (value) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  };
+
   const toggleShowPassword = () => {
     setShowPassword(!showPassword);
   };
@@ -64,7 +68,7 @@ export default function Login() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-sky-50 to-emerald-50 flex flex-col">
+    <div className="relative min-h-screen overflow-hidden bg-linear-to-br from-slate-50 via-sky-50 to-emerald-50 flex flex-col">
       <div className="pointer-events-none absolute -top-16 -left-10 h-40 w-40 rounded-full bg-sky-200/40 blur-2xl" />
       <div className="pointer-events-none absolute -bottom-24 -right-10 h-48 w-48 rounded-full bg-emerald-200/40 blur-2xl" />
       {/* Navbar */}
@@ -291,7 +295,7 @@ export default function Login() {
                 className={`w-full py-3 px-4 rounded-xl font-medium text-white shadow-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
                   isLoading
                     ? "bg-blue-400 cursor-not-allowed"
-                    : "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 hover:shadow-xl"
+                    : "bg-linear-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 hover:shadow-xl"
                 }`}
               >
                 {isLoading ? (

@@ -14,6 +14,9 @@ import {
   faFilePowerpoint,
   faFileAlt,
   faPaperPlane,
+  faTrash,
+  faStar,
+  faEye,
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../api/axios";
 import HeaderBack from "../components/HeaderBack";
@@ -44,6 +47,11 @@ export default function Materials() {
 
   // Download state
   const [isDownloading, setIsDownloading] = useState(false);
+
+  // Delete submission state
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Fetch material detail
   const fetchMaterial = useCallback(async () => {
@@ -407,6 +415,32 @@ export default function Materials() {
     }
   };
 
+  const handleDeleteSubmission = async () => {
+    setIsDeleting(true);
+    setDeleteError("");
+
+    try {
+      await api.delete(`/submissions/${submissionData.id}`);
+
+      // Reset submission data
+      setSubmissionData(null);
+      setUploadFile(null);
+      setUploadStatus("idle");
+      setShowDeleteConfirm(false);
+    } catch (error) {
+      console.error("Delete error:", error);
+      if (error.response?.status === 422) {
+        setDeleteError("Tugas tidak dapat dihapus karena sudah dinilai.");
+      } else {
+        setDeleteError(
+          error.response?.data?.message || "Gagal menghapus tugas",
+        );
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -562,22 +596,116 @@ export default function Materials() {
 
             {/* Sudah submit */}
             {submissionData && uploadStatus === "success" ? (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-center gap-3">
-                  <FontAwesomeIcon
-                    icon={faCheckCircle}
-                    className="text-green-600 text-xl"
-                  />
-                  <div>
-                    <p className="text-green-800 font-medium">
-                      Tugas berhasil dikirim!
-                    </p>
-                    <p className="text-green-600 text-sm">
-                      Terkirim pada: {formatDate(submissionData.submitted_at)}
-                    </p>
+              <>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <FontAwesomeIcon
+                      icon={faCheckCircle}
+                      className="text-green-600 text-xl"
+                    />
+                    <div>
+                      <p className="text-green-800 font-medium">
+                        Tugas berhasil dikirim!
+                      </p>
+                      <p className="text-green-600 text-sm">
+                        Terkirim pada: {formatDate(submissionData.submitted_at)}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
+
+                {/* Grade Section */}
+                {submissionData.grade && (
+                  <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <FontAwesomeIcon
+                        icon={faStar}
+                        className="text-yellow-500 text-lg"
+                      />
+                      <p className="text-sm font-medium text-slate-700">
+                        Nilai:{" "}
+                        <span className="text-lg font-bold text-blue-600">
+                          {submissionData.grade.score}
+                        </span>
+                      </p>
+                    </div>
+                    {submissionData.grade.feedback && (
+                      <div className="mt-2 pt-2 border-t border-blue-200">
+                        <p className="text-xs text-slate-600 font-medium mb-1">
+                          Feedback dari guru:
+                        </p>
+                        <p className="text-sm text-slate-700">
+                          {submissionData.grade.feedback}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Delete Error */}
+                {deleteError && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-600 flex items-center gap-2">
+                      <FontAwesomeIcon icon={faExclamationCircle} />
+                      {deleteError}
+                    </p>
+                  </div>
+                )}
+
+                {/* Delete Button - Only if not graded */}
+                {!submissionData.grade && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="flex-1 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                    >
+                      <FontAwesomeIcon icon={faTrash} />
+                      Hapus / Undo
+                    </button>
+                  </div>
+                )}
+
+                {showDeleteConfirm && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
+                      <p className="text-slate-800 font-medium mb-4">
+                        Apakah Anda yakin ingin menghapus submission ini?
+                      </p>
+                      <p className="text-sm text-slate-600 mb-6">
+                        Anda dapat mengumpulkan ulang nanti.
+                      </p>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setShowDeleteConfirm(false)}
+                          className="flex-1 px-4 py-2 bg-slate-200 text-slate-800 rounded-lg hover:bg-slate-300 transition-colors"
+                        >
+                          Batal
+                        </button>
+                        <button
+                          onClick={handleDeleteSubmission}
+                          disabled={isDeleting}
+                          className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                          {isDeleting ? (
+                            <>
+                              <FontAwesomeIcon
+                                icon={faSpinner}
+                                className="animate-spin"
+                              />
+                              Menghapus...
+                            </>
+                          ) : (
+                            <>
+                              <FontAwesomeIcon icon={faTrash} />
+                              Hapus
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
             ) : (
               <>
                 {/* Upload Area */}
