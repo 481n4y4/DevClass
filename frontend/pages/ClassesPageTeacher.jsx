@@ -141,6 +141,51 @@ const ClassesPageTeacher = () => {
     }).format(date);
   };
 
+  const getFileName = (filePath) => {
+    if (!filePath) return "";
+    return filePath.split("/").pop();
+  };
+
+  const buildDownloadPath = (filePath) => {
+    if (!filePath) return "";
+    return filePath
+      .split("/")
+      .filter(Boolean)
+      .map((segment) => encodeURIComponent(segment))
+      .join("/");
+  };
+
+  const handleDownloadMaterial = async (filePath) => {
+    if (!filePath) return;
+
+    try {
+      const response = await api.get(
+        `/download/${buildDownloadPath(filePath)}`,
+        {
+          responseType: "blob",
+          headers: { Accept: "application/json" },
+        },
+      );
+
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = getFileName(filePath);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Gagal mengunduh file materi:", error);
+      setErrorMessage(
+        error.response?.status === 404
+          ? "File tidak ditemukan di server."
+          : "Gagal mengunduh file materi. Silakan coba lagi.",
+      );
+    }
+  };
+
   // Get unique kelas values for filter
   const uniqueKelas = useMemo(() => {
     const kelasSet = new Set(
@@ -409,13 +454,16 @@ const ClassesPageTeacher = () => {
                   {/* Action Buttons */}
                   <div className="mt-4 flex items-center justify-between">
                     {material.file_path ? (
-                      <a
-                        href={material.file_path}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleDownloadMaterial(material.file_path)
+                        }
                         className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
                       >
                         <FontAwesomeIcon icon={faDownload} />
                         Download
-                      </a>
+                      </button>
                     ) : (
                       <span className="text-xs text-gray-400">
                         Tidak ada file

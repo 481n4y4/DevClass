@@ -158,6 +158,8 @@ export default function MaterialsTeacher() {
       return;
     }
 
+    console.log("[DOWNLOAD DEBUG] Starting download with filePath:", filePath);
+
     setIsDownloading(true);
     setDownloadError("");
 
@@ -165,11 +167,19 @@ export default function MaterialsTeacher() {
       let downloadedBlob = null;
 
       try {
-        const response = await api.get(
-          `/download/${buildDownloadPath(filePath)}`,
-          {
-            responseType: "blob",
-          },
+        const encodedPath = buildDownloadPath(filePath);
+        console.log("[DOWNLOAD DEBUG] Encoded path for API:", encodedPath);
+        console.log("[DOWNLOAD DEBUG] Calling: /download/" + encodedPath);
+
+        const response = await api.get(`/download/${encodedPath}`, {
+          responseType: "blob",
+        });
+
+        console.log(
+          "[DOWNLOAD DEBUG] API response status:",
+          response.status,
+          "Blob size:",
+          response.data.size,
         );
 
         if (response.status === 200) {
@@ -208,13 +218,21 @@ export default function MaterialsTeacher() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = getFileName(filePath);
+      const filename = getFileName(filePath);
+      link.download = filename;
+
+      console.log(
+        "[DOWNLOAD DEBUG] Triggering download with filename:",
+        filename,
+      );
+      console.log("[DOWNLOAD DEBUG] Original filePath was:", filePath);
+
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      console.log("Download berhasil");
+      console.log("[DOWNLOAD DEBUG] Download completed successfully");
     } catch (error) {
       console.error("Download error:", error);
 

@@ -16,7 +16,6 @@ import {
   faPaperPlane,
   faTrash,
   faStar,
-  faEye,
 } from "@fortawesome/free-solid-svg-icons";
 import api from "../api/axios";
 import HeaderBack from "../components/HeaderBack";
@@ -59,7 +58,6 @@ export default function Materials() {
     setErrorMessage("");
 
     try {
-      // API: GET /api/materials/{id}
       const response = await api.get(`/materials/${id}`, {
         headers: { Accept: "application/json" },
       });
@@ -69,7 +67,7 @@ export default function Materials() {
 
       // Cek apakah user sudah pernah submit
       if (data?.submission_required) {
-        checkExistingSubmission();
+        await checkExistingSubmission();
       }
     } catch (error) {
       console.error("Gagal memuat detail material:", error);
@@ -81,19 +79,7 @@ export default function Materials() {
 
   // Check if student already submitted
   const checkExistingSubmission = async () => {
-    const getCurrentUserId = () => {
-      try {
-        const user = JSON.parse(localStorage.getItem("user") || "{}");
-        return user?.id || user?._id || null;
-      } catch {
-        return null;
-      }
-    };
-
-    const userId = getCurrentUserId();
-
     try {
-      // API student endpoint avoids role-protected submissions list endpoint.
       const response = await api.get(`/materials/${id}/my-submission`, {
         headers: { Accept: "application/json" },
       });
@@ -102,37 +88,15 @@ export default function Materials() {
       if (mySubmission) {
         setSubmissionData(mySubmission);
         setUploadStatus("success");
+      } else {
+        setSubmissionData(null);
+        setUploadStatus("idle");
       }
     } catch (error) {
-      // Fallback untuk backend yang belum memiliki endpoint my-submission.
+      console.error("Gagal cek submission:", error);
       if (error?.response?.status === 404) {
-        try {
-          const listResponse = await api.get(`/materials/${id}/submissions`, {
-            headers: { Accept: "application/json" },
-          });
-
-          const submissions = listResponse.data?.data || [];
-          const mySubmission = submissions.find((sub) => {
-            const studentId =
-              sub?.student?.id || sub?.student?._id || sub?.student_id;
-            return userId && String(studentId) === String(userId);
-          });
-
-          if (mySubmission) {
-            setSubmissionData(mySubmission);
-            setUploadStatus("success");
-          }
-        } catch (fallbackError) {
-          // Endpoint fallback bisa dibatasi role (403) atau belum tersedia.
-          if (
-            fallbackError?.response?.status !== 403 &&
-            fallbackError?.response?.status !== 404
-          ) {
-            console.error("Gagal cek submission:", fallbackError);
-          }
-        }
-      } else if (error?.response?.status !== 403) {
-        console.error("Gagal cek submission:", error);
+        setSubmissionData(null);
+        setUploadStatus("idle");
       }
     }
   };
@@ -192,32 +156,6 @@ export default function Materials() {
       .join("/");
   };
 
-  const buildDownloadCandidates = (filePath) => {
-    const normalized = (filePath || "").replace(/^\/+/, "");
-    const fileName = getFileName(normalized);
-    const encodedFullPath = buildDownloadPath(normalized);
-    const encodedFileName = encodeURIComponent(fileName);
-
-    return [
-      `/download/${encodedFullPath}`,
-      `/download/uploads/${encodedFullPath}`,
-      `/download/${encodedFileName}`,
-    ].filter(Boolean);
-  };
-
-  const buildDirectFileCandidates = (filePath) => {
-    const normalized = (filePath || "").replace(/^\/+/, "");
-    const fileName = getFileName(normalized);
-
-    return [
-      `/${normalized}`,
-      `/uploads/${normalized}`,
-      `/storage/${normalized}`,
-      `/files/${normalized}`,
-      `/uploads/${fileName}`,
-    ].filter(Boolean);
-  };
-
   // Download materi file
   const handleDownloadMaterial = async (filePath) => {
     if (!filePath) {
@@ -229,49 +167,12 @@ export default function Materials() {
     setErrorMessage("");
 
     try {
-      let downloadedBlob = null;
-      const candidates = buildDownloadCandidates(filePath);
+      const encodedPath = buildDownloadPath(filePath);
+      const response = await api.get(`/download/${encodedPath}`, {
+        responseType: "blob",
+      });
 
-      for (const url of candidates) {
-        try {
-          const response = await api.get(url, {
-            responseType: "blob",
-          });
-
-          if (response.status === 200) {
-            downloadedBlob = response.data;
-            break;
-          }
-        } catch (downloadError) {
-          if (downloadError?.response?.status !== 404) {
-            throw downloadError;
-          }
-        }
-      }
-
-      if (!downloadedBlob) {
-        const staticCandidates = buildDirectFileCandidates(filePath);
-        for (const url of staticCandidates) {
-          try {
-            const response = await fetch(url, {
-              credentials: "include",
-            });
-
-            if (response.ok) {
-              downloadedBlob = await response.blob();
-              break;
-            }
-          } catch {
-            // Lanjut ke kandidat berikutnya.
-          }
-        }
-      }
-
-      if (!downloadedBlob) {
-        throw new Error("FILE_NOT_FOUND");
-      }
-
-      const blob = new Blob([downloadedBlob]);
+      const blob = new Blob([response.data]);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -284,10 +185,7 @@ export default function Materials() {
       console.error("Download error:", error);
       if (error.response?.status === 403) {
         setErrorMessage("Akses ditolak. Silakan login kembali.");
-      } else if (
-        error.response?.status === 404 ||
-        error.message === "FILE_NOT_FOUND"
-      ) {
+      } else if (error.response?.status === 404) {
         setErrorMessage("File tidak ditemukan.");
       } else {
         setErrorMessage(`Gagal mengunduh file: ${error.message}`);
@@ -345,7 +243,7 @@ export default function Materials() {
     setUploadFile(file || null);
   };
 
-  // Submit assignment ke API
+  // Submit assignment - menggunakan endpoint yang benar dari dokumentasi
   const handleSubmitAssignment = async () => {
     if (!material?.submission_required) {
       setUploadError("Material ini tidak membutuhkan submission.");
@@ -366,7 +264,6 @@ export default function Materials() {
       const formData = new FormData();
       formData.append("file", uploadFile);
 
-      // API: POST /api/submit/{material_id}
       const response = await api.post(`/submit/${id}`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -384,30 +281,37 @@ export default function Materials() {
 
       if (response.status === 200 || response.status === 201) {
         setUploadStatus("success");
-        setSubmissionData(response.data?.data);
-
-        // Reset file input
+        setSubmissionData(response.data);
         setUploadFile(null);
-
-        // Tampilkan pesan sukses
+        
+        // Refresh submission data
+        await checkExistingSubmission();
+        
         setTimeout(() => {
           setUploadStatus("idle");
         }, 3000);
       }
     } catch (error) {
       console.error("Upload error:", error);
-      setUploadStatus("error");
-
-      if (error.response?.data?.message) {
-        setUploadError(error.response.data.message);
-      } else if (error.response?.data?.errors) {
-        const errors = error.response.data.errors;
-        const firstError = Object.values(errors)[0]?.[0];
-        setUploadError(firstError || "Terjadi kesalahan saat upload");
+      
+      if (error.response) {
+        if (error.response.status === 422) {
+          const errorMessage = error.response.data?.message || 
+                             error.response.data?.errors?.file?.[0] ||
+                             "Validasi gagal. Periksa file Anda.";
+          setUploadError(errorMessage);
+        } else if (error.response.status === 403) {
+          setUploadError("Anda tidak memiliki akses untuk submit tugas ini.");
+        } else if (error.response.status === 404) {
+          setUploadError(`Material dengan ID ${id} tidak ditemukan.`);
+        } else {
+          setUploadError(error.response.data?.message || "Terjadi kesalahan saat upload");
+        }
       } else {
         setUploadError("Gagal mengupload tugas. Silakan coba lagi.");
       }
-
+      
+      setUploadStatus("error");
       setTimeout(() => {
         setUploadStatus("idle");
         setUploadError("");
@@ -416,21 +320,35 @@ export default function Materials() {
   };
 
   const handleDeleteSubmission = async () => {
+    if (!submissionData?.id) {
+      setDeleteError("Data submission tidak ditemukan.");
+      return;
+    }
+
     setIsDeleting(true);
     setDeleteError("");
 
     try {
-      await api.delete(`/submissions/${submissionData.id}`);
+      await api.delete(`/submissions/${submissionData.id}`, {
+        headers: { Accept: "application/json" },
+      });
 
       // Reset submission data
       setSubmissionData(null);
       setUploadFile(null);
       setUploadStatus("idle");
       setShowDeleteConfirm(false);
+      
+      // Refresh untuk memastikan
+      await checkExistingSubmission();
+      
     } catch (error) {
       console.error("Delete error:", error);
+      
       if (error.response?.status === 422) {
         setDeleteError("Tugas tidak dapat dihapus karena sudah dinilai.");
+      } else if (error.response?.status === 403) {
+        setDeleteError("Anda tidak memiliki izin untuk menghapus tugas ini.");
       } else {
         setDeleteError(
           error.response?.data?.message || "Gagal menghapus tugas",
@@ -657,7 +575,8 @@ export default function Materials() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => setShowDeleteConfirm(true)}
-                      className="flex-1 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                      disabled={isDeleting}
+                      className="flex-1 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors flex items-center justify-center gap-2 text-sm font-medium disabled:opacity-50"
                     >
                       <FontAwesomeIcon icon={faTrash} />
                       Hapus / Undo
@@ -665,18 +584,25 @@ export default function Materials() {
                   </div>
                 )}
 
+                {/* Delete Confirmation Modal */}
                 {showDeleteConfirm && (
                   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
-                      <p className="text-slate-800 font-medium mb-4">
-                        Apakah Anda yakin ingin menghapus submission ini?
+                      <h3 className="text-lg font-semibold text-slate-800 mb-2">
+                        Hapus Submission?
+                      </h3>
+                      <p className="text-slate-600 mb-4">
+                        Apakah Anda yakin ingin menghapus submission ini? Anda dapat mengumpulkan ulang nanti.
                       </p>
-                      <p className="text-sm text-slate-600 mb-6">
-                        Anda dapat mengumpulkan ulang nanti.
-                      </p>
+                      {deleteError && (
+                        <p className="text-sm text-red-600 mb-4">{deleteError}</p>
+                      )}
                       <div className="flex gap-3">
                         <button
-                          onClick={() => setShowDeleteConfirm(false)}
+                          onClick={() => {
+                            setShowDeleteConfirm(false);
+                            setDeleteError("");
+                          }}
                           className="flex-1 px-4 py-2 bg-slate-200 text-slate-800 rounded-lg hover:bg-slate-300 transition-colors"
                         >
                           Batal
@@ -688,10 +614,7 @@ export default function Materials() {
                         >
                           {isDeleting ? (
                             <>
-                              <FontAwesomeIcon
-                                icon={faSpinner}
-                                className="animate-spin"
-                              />
+                              <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
                               Menghapus...
                             </>
                           ) : (
