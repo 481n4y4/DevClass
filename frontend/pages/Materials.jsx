@@ -52,6 +52,30 @@ export default function Materials() {
   const [deleteError, setDeleteError] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  // Check if student already submitted
+  const checkExistingSubmission = useCallback(async () => {
+    try {
+      const response = await api.get(`/materials/${id}/my-submission`, {
+        headers: { Accept: "application/json" },
+      });
+
+      const mySubmission = response.data?.data || null;
+      if (mySubmission) {
+        setSubmissionData(mySubmission);
+        setUploadStatus("success");
+      } else {
+        setSubmissionData(null);
+        setUploadStatus("idle");
+      }
+    } catch (error) {
+      console.error("Gagal cek submission:", error);
+      if (error?.response?.status === 404) {
+        setSubmissionData(null);
+        setUploadStatus("idle");
+      }
+    }
+  }, [id]);
+
   // Fetch material detail
   const fetchMaterial = useCallback(async () => {
     setIsLoading(true);
@@ -75,31 +99,7 @@ export default function Materials() {
     } finally {
       setIsLoading(false);
     }
-  }, [id]);
-
-  // Check if student already submitted
-  const checkExistingSubmission = async () => {
-    try {
-      const response = await api.get(`/materials/${id}/my-submission`, {
-        headers: { Accept: "application/json" },
-      });
-
-      const mySubmission = response.data?.data || null;
-      if (mySubmission) {
-        setSubmissionData(mySubmission);
-        setUploadStatus("success");
-      } else {
-        setSubmissionData(null);
-        setUploadStatus("idle");
-      }
-    } catch (error) {
-      console.error("Gagal cek submission:", error);
-      if (error?.response?.status === 404) {
-        setSubmissionData(null);
-        setUploadStatus("idle");
-      }
-    }
-  };
+  }, [id, checkExistingSubmission]);
 
   useEffect(() => {
     fetchMaterial();
@@ -266,7 +266,6 @@ export default function Materials() {
 
       const response = await api.post(`/submit/${id}`, formData, {
         headers: {
-          "Content-Type": "multipart/form-data",
           Accept: "application/json",
         },
         onUploadProgress: (progressEvent) => {
@@ -283,34 +282,43 @@ export default function Materials() {
         setUploadStatus("success");
         setSubmissionData(response.data);
         setUploadFile(null);
-        
+
         // Refresh submission data
         await checkExistingSubmission();
-        
+
         setTimeout(() => {
           setUploadStatus("idle");
         }, 3000);
       }
     } catch (error) {
       console.error("Upload error:", error);
-      
+
+      const backendErrors = error.response?.data?.errors;
+      const firstBackendError = backendErrors
+        ? Object.values(backendErrors).flat()?.[0]
+        : "";
+
       if (error.response) {
         if (error.response.status === 422) {
-          const errorMessage = error.response.data?.message || 
-                             error.response.data?.errors?.file?.[0] ||
-                             "Validasi gagal. Periksa file Anda.";
+          const errorMessage =
+            firstBackendError ||
+            error.response.data?.errors?.file?.[0] ||
+            error.response.data?.message ||
+            "Validasi gagal. Periksa file Anda.";
           setUploadError(errorMessage);
         } else if (error.response.status === 403) {
           setUploadError("Anda tidak memiliki akses untuk submit tugas ini.");
         } else if (error.response.status === 404) {
           setUploadError(`Material dengan ID ${id} tidak ditemukan.`);
         } else {
-          setUploadError(error.response.data?.message || "Terjadi kesalahan saat upload");
+          setUploadError(
+            error.response.data?.message || "Terjadi kesalahan saat upload",
+          );
         }
       } else {
         setUploadError("Gagal mengupload tugas. Silakan coba lagi.");
       }
-      
+
       setUploadStatus("error");
       setTimeout(() => {
         setUploadStatus("idle");
@@ -338,13 +346,12 @@ export default function Materials() {
       setUploadFile(null);
       setUploadStatus("idle");
       setShowDeleteConfirm(false);
-      
+
       // Refresh untuk memastikan
       await checkExistingSubmission();
-      
     } catch (error) {
       console.error("Delete error:", error);
-      
+
       if (error.response?.status === 422) {
         setDeleteError("Tugas tidak dapat dihapus karena sudah dinilai.");
       } else if (error.response?.status === 403) {
@@ -592,10 +599,13 @@ export default function Materials() {
                         Hapus Submission?
                       </h3>
                       <p className="text-slate-600 mb-4">
-                        Apakah Anda yakin ingin menghapus submission ini? Anda dapat mengumpulkan ulang nanti.
+                        Apakah Anda yakin ingin menghapus submission ini? Anda
+                        dapat mengumpulkan ulang nanti.
                       </p>
                       {deleteError && (
-                        <p className="text-sm text-red-600 mb-4">{deleteError}</p>
+                        <p className="text-sm text-red-600 mb-4">
+                          {deleteError}
+                        </p>
                       )}
                       <div className="flex gap-3">
                         <button
@@ -614,7 +624,10 @@ export default function Materials() {
                         >
                           {isDeleting ? (
                             <>
-                              <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+                              <FontAwesomeIcon
+                                icon={faSpinner}
+                                className="animate-spin"
+                              />
                               Menghapus...
                             </>
                           ) : (
